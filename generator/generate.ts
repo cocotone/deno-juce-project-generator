@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-net
+#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-net --allow-env
 
 /**
  * JUCE Audio Plugin Project Generator
@@ -7,7 +7,7 @@
  * JUCE framework is automatically cloned from GitHub during project generation.
  *
  * Usage:
- *   deno run --allow-read --allow-write --allow-run --allow-net \
+ *   deno run --allow-read --allow-write --allow-run --allow-net --allow-env \
  *     https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts
  *
  * Options:
@@ -62,7 +62,7 @@ JUCE Audio Plugin Project Generator
 =====================================
 
 Usage:
-  deno run --allow-read --allow-write --allow-run --allow-net <script-url> [options]
+  deno run --allow-read --allow-write --allow-run --allow-net --allow-env <script-url> [options]
 
 Options:
   --name <string>              Plugin name (default: "MyPlugin")
@@ -263,6 +263,8 @@ Available tasks:
   • deno task build:debug     - Build in Debug mode
   • deno task clean           - Clean build directory
   • deno task rebuild         - Clean and rebuild
+  • deno task run             - Build and run Standalone
+  • deno task run:debug       - Build and run Standalone (Debug)
   • deno task format          - Format TypeScript files
   • deno task lint            - Lint TypeScript files
 

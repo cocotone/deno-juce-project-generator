@@ -141,6 +141,8 @@ export function generateJuceDenoJson(): string {
     "build:release": "deno run --allow-all build.ts --config Release",
     "clean": "deno run --allow-all build.ts --clean",
     "rebuild": "deno run --allow-all build.ts --clean && deno run --allow-all build.ts --config Release",
+    "run": "deno run --allow-all build.ts --run",
+    "run:debug": "deno run --allow-all build.ts --run --config Debug",
     "format": "deno fmt",
     "format:check": "deno fmt --check",
     "lint": "deno lint"
@@ -179,6 +181,7 @@ export function generateJuceBuildScript(): string {
 
 import $ from "jsr:@david/dax@0.42.0";
 import { parseArgs } from "jsr:@std/cli@1.0.6/parse-args";
+import { exists } from "jsr:@std/fs@1.0.8/exists";
 import { config } from "./build.config.ts";
 import {
   setupFileAPI,
@@ -189,7 +192,7 @@ import type { BuildArtifact } from "./cmake-types.ts";
 
 // Parse command line arguments
 const args = parseArgs(Deno.args, {
-  boolean: ["clean"],
+  boolean: ["clean", "run"],
   string: ["config", "generator"],
   default: {
     config: "Release",
@@ -209,7 +212,7 @@ function getDefaultGenerator(): string {
 }
 
 async function clean(): Promise<void> {
-  console.log("�� Cleaning build directory...");
+  console.log("🧹 Cleaning build directory...");
   await $\`rm -rf build\`;
 }
 
@@ -243,10 +246,37 @@ async function build(): Promise<BuildArtifact[]> {
   return artifacts;
 }
 
+function getStandalonePath(): string {
+  const artefactsBase = \`build/\${config.pluginName}_artefacts/\${args.config}\`;
+
+  switch (Deno.build.os) {
+    case "windows":
+      return \`\${artefactsBase}/Standalone/\${config.pluginName}.exe\`;
+    case "darwin":
+      return \`\${artefactsBase}/Standalone/\${config.pluginName}.app/Contents/MacOS/\${config.pluginName}\`;
+    default:
+      return \`\${artefactsBase}/Standalone/\${config.pluginName}\`;
+  }
+}
+
+async function runStandalone(): Promise<void> {
+  const standalonePath = getStandalonePath();
+
+  console.log(\`🚀 Running Standalone: \${standalonePath}\`);
+
+  if (!(await exists(standalonePath))) {
+    console.error(\`❌ Standalone not found: \${standalonePath}\`);
+    console.error("   Run 'deno task build' first to build the plugin.");
+    Deno.exit(1);
+  }
+
+  await $\`\${standalonePath}\`;
+}
+
 // Main entry point
 async function main(): Promise<void> {
   try {
-    console.log(\`🎹 Building \${config.pluginName} v\${config.version}\`);
+    console.log(\`🎹 \${config.pluginName} v\${config.version}\`);
     console.log(\`   Configuration: \${args.config}\`);
     console.log(\`   Platform: \${Deno.build.os}\`);
     console.log(\`   Generator: \${args.generator}\`);
@@ -254,6 +284,17 @@ async function main(): Promise<void> {
 
     if (args.clean) {
       await clean();
+      Deno.exit(0);
+    }
+
+    if (args.run) {
+      // Build if not already built, then run
+      const standalonePath = getStandalonePath();
+      if (!(await exists(standalonePath))) {
+        await configure();
+        await build();
+      }
+      await runStandalone();
       Deno.exit(0);
     }
 
