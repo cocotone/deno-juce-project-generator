@@ -1,6 +1,7 @@
-# C++/CMake Project Generator
+# JUCE Audio Plugin Project Generator
 
-A project generator that creates C++/CMake projects locally by running from a remote Deno URL.
+A Deno-based project generator that creates JUCE audio plugin projects locally by running from a remote URL.
+JUCE framework is automatically cloned from GitHub during project generation.
 
 ## Usage
 
@@ -10,16 +11,18 @@ Once hosted on GitHub, you can generate a project with the following command:
 
 ```bash
 # Basic usage
-deno run --allow-read --allow-write --allow-run \
-  https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/generator/generate.ts
+deno run --allow-read --allow-write --allow-run --allow-net \
+  https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts
 
 # With options
-deno run --allow-read --allow-write --allow-run \
-  https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/generator/generate.ts \
-  --name "MyProject" \
-  --author "Your Name" \
+deno run --allow-read --allow-write --allow-run --allow-net \
+  https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
+  --name "MySynth" \
+  --author "Cocotone" \
   --version "1.0.0" \
-  --output ./my-project \
+  --output ./my-synth \
+  --manufacturer-code "Coco" \
+  --plugin-code "Msyn" \
   --with-git
 ```
 
@@ -27,45 +30,47 @@ deno run --allow-read --allow-write --allow-run \
 
 ```bash
 cd generator
-deno run --allow-read --allow-write --allow-run generate.ts --name "TestProject"
+deno run --allow-read --allow-write --allow-run --allow-net generate.ts --name "TestPlugin"
 ```
 
 ## Options
 
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
-| `--name` | `-n` | `MyApp` | Project name |
-| `--author` | `-a` | `Your Name` | Author name |
-| `--version` | `-v` | `1.0.0` | Version |
-| `--output` | `-o` | (project name) | Output directory |
+| `--name` | `-n` | `MyPlugin` | Plugin name |
+| `--author` | `-a` | `Your Name` | Author/Company name |
+| `--version` | `-v` | `0.0.1` | Version |
+| `--output` | `-o` | (plugin name) | Output directory |
+| `--manufacturer-code` | - | `Manu` | 4-char manufacturer code |
+| `--plugin-code` | - | `Plug` | 4-char plugin code |
+| `--juce-tag` | - | `master` | JUCE git tag/branch |
 | `--with-git` | - | false | Initialize git repository |
 | `--help` | `-h` | - | Show help |
 
 ## Generated Project Structure
 
 ```
-<project-name>/
-├── CMakeLists.txt          # CMake configuration
+<plugin-name>/
+├── CMakeLists.txt          # CMake configuration for JUCE plugin
 ├── deno.json               # Deno task configuration
-├── build.ts                # Build script
+├── build.ts                # Build script (TypeScript/Deno)
 ├── build.config.ts         # Build configuration
 ├── cmake-file-api.ts       # CMake File API integration
 ├── cmake-types.ts          # TypeScript type definitions
 ├── .gitignore
-└── src/
-    ├── main.cpp            # Main entry point
-    ├── core/
-    │   ├── core.h          # Static library header
-    │   └── core.cpp        # Static library implementation
-    └── utils/
-        ├── utils.h         # Shared library header
-        └── utils.cpp       # Shared library implementation
+├── External/
+│   └── JUCE/               # JUCE framework (git cloned)
+└── Source/
+    ├── PluginProcessor.h   # Audio processor header
+    ├── PluginProcessor.cpp # Audio processor implementation
+    ├── PluginEditor.h      # Plugin editor (GUI) header
+    └── PluginEditor.cpp    # Plugin editor implementation
 ```
 
 ## Post-Generation Workflow
 
 ```bash
-cd <project-name>
+cd <plugin-name>
 
 # Build
 deno task build              # Build in Release mode
@@ -75,39 +80,59 @@ deno task build:debug        # Build in Debug mode
 deno task clean              # Remove build directory
 deno task rebuild            # Clean and rebuild
 
-# Test
-deno task test               # Build and run executable
-
 # Format & Lint
 deno task format             # Format TypeScript files
 deno task lint               # Run linter
 ```
 
+## Generated Plugin Formats
+
+The generator creates plugins in the following formats:
+- **AU (Audio Unit)** - macOS only
+- **VST3** - Windows, macOS, Linux
+- **Standalone** - All platforms
+
+Plugin artifacts are located in:
+```
+build/<PluginName>_artefacts/<Configuration>/
+```
+
 ## Requirements
 
 - [Deno](https://deno.land/) v1.40 or later
-- [CMake](https://cmake.org/) 3.15 or later
-- C++17 compatible compiler
-  - Windows: Visual Studio 2022
-  - macOS: Xcode Command Line Tools
-  - Linux: GCC 8+ or Clang 8+
+- [CMake](https://cmake.org/) 3.22 or later
+- [Git](https://git-scm.com/) (for cloning JUCE)
+- C++17 compatible compiler:
+  - **Windows**: Visual Studio 2022
+  - **macOS**: Xcode Command Line Tools
+  - **Linux**: GCC 8+ or Clang 8+
+
+## JUCE Version
+
+By default, the generator clones the `master` branch of JUCE. You can specify a specific version:
+
+```bash
+# Use a specific JUCE version
+deno run --allow-read --allow-write --allow-run --allow-net generate.ts \
+  --name "MyPlugin" \
+  --juce-tag "7.0.9"
+```
 
 ## Customization
 
-The generated project can be customized as follows:
+After generation, you can customize your plugin:
 
-1. **CMakeLists.txt**: Add libraries, configure dependencies
+1. **CMakeLists.txt**: Add JUCE modules, configure plugin properties
 2. **build.config.ts**: Modify project metadata
-3. **src/**: Add or modify C++ source code
+3. **Source/**: Implement your audio processing and GUI
 
-## Hosting on GitHub Raw
+### Common JUCE Plugin Properties
 
-1. Fork or clone this repository
-2. Push the `generator/` directory to GitHub
-3. Access using the Raw URL:
-   ```
-   https://raw.githubusercontent.com/<user>/<repo>/<branch>/generator/generate.ts
-   ```
+Edit `CMakeLists.txt` to configure:
+- `IS_SYNTH` - Set to TRUE for synthesizers
+- `NEEDS_MIDI_INPUT` - Enable MIDI input
+- `NEEDS_MIDI_OUTPUT` - Enable MIDI output
+- `FORMATS` - Add/remove plugin formats (AU, VST3, AAX, etc.)
 
 ## License
 
@@ -115,9 +140,10 @@ MIT License
 
 ---
 
-# C++/CMake プロジェクトジェネレーター (日本語)
+# JUCE オーディオプラグイン プロジェクトジェネレーター (日本語)
 
-Deno URL実行でリモートからC++/CMakeプロジェクトをローカルに生成するジェネレーターです。
+Denoを使用してリモートURLからJUCEオーディオプラグインプロジェクトを生成するジェネレーターです。
+JUCEフレームワークはプロジェクト生成時にGitHubから自動的にクローンされます。
 
 ## 使い方
 
@@ -127,16 +153,18 @@ GitHubにホストした場合、以下のコマンドでプロジェクトを�
 
 ```bash
 # 基本的な使用方法
-deno run --allow-read --allow-write --allow-run \
-  https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/generator/generate.ts
+deno run --allow-read --allow-write --allow-run --allow-net \
+  https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts
 
 # オプション付き
-deno run --allow-read --allow-write --allow-run \
-  https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/generator/generate.ts \
-  --name "MyProject" \
-  --author "Your Name" \
+deno run --allow-read --allow-write --allow-run --allow-net \
+  https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
+  --name "MySynth" \
+  --author "Cocotone" \
   --version "1.0.0" \
-  --output ./my-project \
+  --output ./my-synth \
+  --manufacturer-code "Coco" \
+  --plugin-code "Msyn" \
   --with-git
 ```
 
@@ -144,45 +172,47 @@ deno run --allow-read --allow-write --allow-run \
 
 ```bash
 cd generator
-deno run --allow-read --allow-write --allow-run generate.ts --name "TestProject"
+deno run --allow-read --allow-write --allow-run --allow-net generate.ts --name "TestPlugin"
 ```
 
 ## オプション
 
 | オプション | 短縮形 | デフォルト | 説明 |
 |-----------|--------|-----------|------|
-| `--name` | `-n` | `MyApp` | プロジェクト名 |
-| `--author` | `-a` | `Your Name` | 作者名 |
-| `--version` | `-v` | `1.0.0` | バージョン |
-| `--output` | `-o` | (プロジェクト名) | 出力ディレクトリ |
+| `--name` | `-n` | `MyPlugin` | プラグイン名 |
+| `--author` | `-a` | `Your Name` | 作者/会社名 |
+| `--version` | `-v` | `0.0.1` | バージョン |
+| `--output` | `-o` | (プラグイン名) | 出力ディレクトリ |
+| `--manufacturer-code` | - | `Manu` | 4文字のメーカーコード |
+| `--plugin-code` | - | `Plug` | 4文字のプラグインコード |
+| `--juce-tag` | - | `master` | JUCEのgitタグ/ブランチ |
 | `--with-git` | - | false | Gitリポジトリを初期化 |
 | `--help` | `-h` | - | ヘルプを表示 |
 
 ## 生成されるプロジェクト構造
 
 ```
-<project-name>/
-├── CMakeLists.txt          # CMake設定
+<plugin-name>/
+├── CMakeLists.txt          # JUCEプラグイン用CMake設定
 ├── deno.json               # Denoタスク設定
-├── build.ts                # ビルドスクリプト
+├── build.ts                # ビルドスクリプト (TypeScript/Deno)
 ├── build.config.ts         # ビルド設定
 ├── cmake-file-api.ts       # CMake File API統合
 ├── cmake-types.ts          # TypeScript型定義
 ├── .gitignore
-└── src/
-    ├── main.cpp            # メインエントリーポイント
-    ├── core/
-    │   ├── core.h          # 静的ライブラリヘッダー
-    │   └── core.cpp        # 静的ライブラリ実装
-    └── utils/
-        ├── utils.h         # 動的ライブラリヘッダー
-        └── utils.cpp       # 動的ライブラリ実装
+├── External/
+│   └── JUCE/               # JUCEフレームワーク (git clone)
+└── Source/
+    ├── PluginProcessor.h   # オーディオプロセッサヘッダー
+    ├── PluginProcessor.cpp # オーディオプロセッサ実装
+    ├── PluginEditor.h      # プラグインエディタ (GUI) ヘッダー
+    └── PluginEditor.cpp    # プラグインエディタ実装
 ```
 
 ## 生成後のワークフロー
 
 ```bash
-cd <project-name>
+cd <plugin-name>
 
 # ビルド
 deno task build              # Releaseモードでビルド
@@ -192,39 +222,59 @@ deno task build:debug        # Debugモードでビルド
 deno task clean              # ビルドディレクトリを削除
 deno task rebuild            # クリーンして再ビルド
 
-# テスト
-deno task test               # ビルドして実行ファイルを実行
-
 # フォーマット＆リント
 deno task format             # TypeScriptファイルをフォーマット
 deno task lint               # リント検査
 ```
 
+## 生成されるプラグインフォーマット
+
+以下のフォーマットでプラグインが生成されます：
+- **AU (Audio Unit)** - macOSのみ
+- **VST3** - Windows, macOS, Linux
+- **Standalone** - 全プラットフォーム
+
+プラグインの成果物は以下に配置されます：
+```
+build/<PluginName>_artefacts/<Configuration>/
+```
+
 ## 必要条件
 
 - [Deno](https://deno.land/) v1.40以上
-- [CMake](https://cmake.org/) 3.15以上
-- C++17対応コンパイラ
-  - Windows: Visual Studio 2022
-  - macOS: Xcode Command Line Tools
-  - Linux: GCC 8+ または Clang 8+
+- [CMake](https://cmake.org/) 3.22以上
+- [Git](https://git-scm.com/) (JUCEのクローン用)
+- C++17対応コンパイラ:
+  - **Windows**: Visual Studio 2022
+  - **macOS**: Xcode Command Line Tools
+  - **Linux**: GCC 8+ または Clang 8+
+
+## JUCEバージョン
+
+デフォルトでは、JUCEの`master`ブランチがクローンされます。特定のバージョンを指定することもできます：
+
+```bash
+# 特定のJUCEバージョンを使用
+deno run --allow-read --allow-write --allow-run --allow-net generate.ts \
+  --name "MyPlugin" \
+  --juce-tag "7.0.9"
+```
 
 ## カスタマイズ
 
-生成されたプロジェクトは以下のようにカスタマイズできます：
+生成後、以下をカスタマイズできます：
 
-1. **CMakeLists.txt**: ライブラリの追加、依存関係の設定
+1. **CMakeLists.txt**: JUCEモジュールの追加、プラグインプロパティの設定
 2. **build.config.ts**: プロジェクトメタデータの変更
-3. **src/**: C++ソースコードの追加・変更
+3. **Source/**: オーディオ処理とGUIの実装
 
-## GitHub Rawでのホスティング
+### 一般的なJUCEプラグインプロパティ
 
-1. このリポジトリをフォークまたはクローン
-2. `generator/` ディレクトリをGitHubにプッシュ
-3. Raw URLを使用してアクセス：
-   ```
-   https://raw.githubusercontent.com/<user>/<repo>/<branch>/generator/generate.ts
-   ```
+`CMakeLists.txt`で以下を設定できます：
+- `IS_SYNTH` - シンセサイザーの場合はTRUE
+- `NEEDS_MIDI_INPUT` - MIDI入力を有効化
+- `NEEDS_MIDI_OUTPUT` - MIDI出力を有効化
+- `FORMATS` - プラグインフォーマットの追加/削除 (AU, VST3, AAX等)
 
 ## ライセンス
 

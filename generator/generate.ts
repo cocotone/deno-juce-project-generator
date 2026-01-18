@@ -1,72 +1,91 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run
+#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-net
 
 /**
- * C++/CMake Project Generator
+ * JUCE Audio Plugin Project Generator
  *
- * Generate a C++/CMake project locally by running from a remote URL.
+ * Generate a JUCE audio plugin project locally by running from a remote URL.
+ * JUCE framework is automatically cloned from GitHub during project generation.
  *
  * Usage:
- *   deno run --allow-read --allow-write --allow-run https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/generator/generate.ts
+ *   deno run --allow-read --allow-write --allow-run --allow-net \
+ *     https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts
  *
  * Options:
- *   --name <string>     Project name (default: "MyApp")
- *   --author <string>   Author name (default: "Your Name")
- *   --version <string>  Version (default: "1.0.0")
- *   --output <string>   Output directory (default: current directory)
- *   --with-git          Initialize git repository
- *   --help              Show help
+ *   --name <string>              Plugin name (default: "MyPlugin")
+ *   --author <string>            Author/Company name (default: "Your Name")
+ *   --version <string>           Version (default: "0.0.1")
+ *   --output <string>            Output directory (default: plugin name)
+ *   --manufacturer-code <string> 4-char manufacturer code (default: "Manu")
+ *   --plugin-code <string>       4-char plugin code (default: "Plug")
+ *   --with-git                   Initialize git repository
+ *   --juce-tag <string>          JUCE git tag/branch (default: "master")
+ *   --help                       Show help
  */
 
+import $ from "jsr:@david/dax@0.42.0";
 import { parseArgs } from "jsr:@std/cli@1.0.6/parse-args";
 import { join } from "jsr:@std/path@1.0.8";
 import { ensureDir } from "jsr:@std/fs@1.0.8/ensure-dir";
 import { exists } from "jsr:@std/fs@1.0.8/exists";
 
 import {
-  generateCMakeLists,
-  generateBuildConfig,
-  generateBuildScript,
-  generateCMakeFileAPI,
-  generateCMakeTypes,
-  generateDenoJson,
-  generateGitignore,
-  generateMainCpp,
-  generateCoreHeader,
-  generateCoreSource,
-  generateUtilsHeader,
-  generateUtilsSource,
-} from "./templates.ts";
+  generateJuceCMakeLists,
+  generateJuceDenoJson,
+  generateJuceBuildScript,
+  generateJuceBuildConfig,
+  generateJuceCMakeFileAPI,
+  generateJuceCMakeTypes,
+  generateJuceGitignore,
+  generatePluginProcessorH,
+  generatePluginProcessorCpp,
+  generatePluginEditorH,
+  generatePluginEditorCpp,
+} from "./juce-templates.ts";
 
-interface ProjectConfig {
+export interface JucePluginConfig {
   name: string;
-  nameLower: string;
+  namePascal: string;
+  nameSnake: string;
   nameUpper: string;
   author: string;
   version: string;
   outputDir: string;
+  manufacturerCode: string;
+  pluginCode: string;
   withGit: boolean;
+  juceTag: string;
 }
 
 function showHelp(): void {
   console.log(`
-C++/CMake Project Generator
-============================
+JUCE Audio Plugin Project Generator
+=====================================
 
 Usage:
-  deno run --allow-read --allow-write --allow-run <script-url> [options]
+  deno run --allow-read --allow-write --allow-run --allow-net <script-url> [options]
 
 Options:
-  --name <string>     Project name (default: "MyApp")
-  --author <string>   Author name (default: "Your Name")
-  --version <string>  Version (default: "1.0.0")
-  --output <string>   Output directory (default: current directory)
-  --with-git          Initialize git repository
-  --help              Show this help
+  --name <string>              Plugin name (default: "MyPlugin")
+  --author <string>            Author/Company name (default: "Your Name")
+  --version <string>           Version (default: "0.0.1")
+  --output <string>            Output directory (default: plugin name)
+  --manufacturer-code <string> 4-char manufacturer code (default: "Manu")
+  --plugin-code <string>       4-char plugin code (default: "Plug")
+  --with-git                   Initialize git repository
+  --juce-tag <string>          JUCE git tag/branch (default: "master")
+  --help                       Show this help
 
 Example:
-  deno run --allow-read --allow-write --allow-run https://example.com/generate.ts \\
-    --name "MyProject" --author "John Doe" --output ./my-project --with-git
+  deno run --allow-read --allow-write --allow-run --allow-net \\
+    https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \\
+    --name "MySynth" --author "Cocotone" --output ./my-synth --with-git
 `);
+}
+
+function toPascalCase(str: string): string {
+  return str
+    .replace(/[\s_-]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ""))
+    .replace(/^(.)/, (c) => c.toUpperCase());
 }
 
 function toSnakeCase(str: string): string {
@@ -85,11 +104,35 @@ async function createFile(
   console.log(`  ✅ ${description}: ${path}`);
 }
 
-async function generateProject(config: ProjectConfig): Promise<void> {
-  console.log(`\n🚀 Generating C++/CMake project: ${config.name}`);
+async function cloneJuce(outputDir: string, juceTag: string): Promise<void> {
+  const juceDir = join(outputDir, "External", "JUCE");
+
+  console.log("\n📦 Cloning JUCE framework...");
+  console.log(`   Repository: https://github.com/juce-framework/JUCE.git`);
+  console.log(`   Tag/Branch: ${juceTag}`);
+  console.log(`   Destination: ${juceDir}`);
+
+  // Create External directory
+  await ensureDir(join(outputDir, "External"));
+
+  // Clone JUCE using dax
+  try {
+    await $`git clone --depth 1 --branch ${juceTag} https://github.com/juce-framework/JUCE.git ${juceDir}`;
+    console.log("  ✅ JUCE cloned successfully");
+  } catch (error) {
+    console.error("  ❌ Failed to clone JUCE:", error);
+    console.error("     Make sure git is installed and you have internet access.");
+    Deno.exit(1);
+  }
+}
+
+async function generateProject(config: JucePluginConfig): Promise<void> {
+  console.log(`\n🎹 Generating JUCE Audio Plugin: ${config.name}`);
   console.log(`   Output directory: ${config.outputDir}`);
   console.log(`   Author: ${config.author}`);
   console.log(`   Version: ${config.version}`);
+  console.log(`   Manufacturer Code: ${config.manufacturerCode}`);
+  console.log(`   Plugin Code: ${config.pluginCode}`);
   console.log("");
 
   // Check if the directory already exists
@@ -109,9 +152,8 @@ async function generateProject(config: ProjectConfig): Promise<void> {
   console.log("📁 Creating directory structure...");
   const dirs = [
     config.outputDir,
-    join(config.outputDir, "src"),
-    join(config.outputDir, "src", "core"),
-    join(config.outputDir, "src", "utils"),
+    join(config.outputDir, "Source"),
+    join(config.outputDir, "External"),
   ];
 
   for (const dir of dirs) {
@@ -119,97 +161,88 @@ async function generateProject(config: ProjectConfig): Promise<void> {
     console.log(`  📂 ${dir}`);
   }
 
+  // Clone JUCE
+  await cloneJuce(config.outputDir, config.juceTag);
+
   console.log("\n📝 Generating files...");
 
   // CMakeLists.txt
   await createFile(
     join(config.outputDir, "CMakeLists.txt"),
-    generateCMakeLists(config),
+    generateJuceCMakeLists(config),
     "CMakeLists.txt"
   );
 
   // Deno/TypeScript build system
   await createFile(
     join(config.outputDir, "deno.json"),
-    generateDenoJson(),
+    generateJuceDenoJson(),
     "deno.json"
   );
 
   await createFile(
     join(config.outputDir, "build.ts"),
-    generateBuildScript(),
+    generateJuceBuildScript(),
     "build.ts"
   );
 
   await createFile(
     join(config.outputDir, "build.config.ts"),
-    generateBuildConfig(config),
+    generateJuceBuildConfig(config),
     "build.config.ts"
   );
 
   await createFile(
     join(config.outputDir, "cmake-file-api.ts"),
-    generateCMakeFileAPI(),
+    generateJuceCMakeFileAPI(),
     "cmake-file-api.ts"
   );
 
   await createFile(
     join(config.outputDir, "cmake-types.ts"),
-    generateCMakeTypes(),
+    generateJuceCMakeTypes(),
     "cmake-types.ts"
   );
 
-  // C++ source files
+  // Plugin source files
   await createFile(
-    join(config.outputDir, "src", "main.cpp"),
-    generateMainCpp(config),
-    "src/main.cpp"
+    join(config.outputDir, "Source", "PluginProcessor.h"),
+    generatePluginProcessorH(config),
+    "Source/PluginProcessor.h"
   );
 
   await createFile(
-    join(config.outputDir, "src", "core", "core.h"),
-    generateCoreHeader(config),
-    "src/core/core.h"
+    join(config.outputDir, "Source", "PluginProcessor.cpp"),
+    generatePluginProcessorCpp(config),
+    "Source/PluginProcessor.cpp"
   );
 
   await createFile(
-    join(config.outputDir, "src", "core", "core.cpp"),
-    generateCoreSource(config),
-    "src/core/core.cpp"
+    join(config.outputDir, "Source", "PluginEditor.h"),
+    generatePluginEditorH(config),
+    "Source/PluginEditor.h"
   );
 
   await createFile(
-    join(config.outputDir, "src", "utils", "utils.h"),
-    generateUtilsHeader(config),
-    "src/utils/utils.h"
-  );
-
-  await createFile(
-    join(config.outputDir, "src", "utils", "utils.cpp"),
-    generateUtilsSource(config),
-    "src/utils/utils.cpp"
+    join(config.outputDir, "Source", "PluginEditor.cpp"),
+    generatePluginEditorCpp(config),
+    "Source/PluginEditor.cpp"
   );
 
   // .gitignore
   await createFile(
     join(config.outputDir, ".gitignore"),
-    generateGitignore(),
+    generateJuceGitignore(),
     ".gitignore"
   );
 
   // Initialize git repository
   if (config.withGit) {
     console.log("\n🔧 Initializing git repository...");
-    const cmd = new Deno.Command("git", {
-      args: ["init"],
-      cwd: config.outputDir,
-      stdout: "piped",
-      stderr: "piped",
-    });
-    const result = await cmd.output();
-    if (result.success) {
+    try {
+      await $`git -C ${config.outputDir} init`;
       console.log("  ✅ Git repository initialized");
-    } else {
+    } catch {
       console.log(
         "  ⚠️  Failed to initialize git repository (git may not be installed)"
       );
@@ -217,33 +250,45 @@ async function generateProject(config: ProjectConfig): Promise<void> {
   }
 
   console.log("\n" + "═".repeat(60));
-  console.log("✨ Project generated successfully!");
+  console.log("✨ JUCE Audio Plugin project generated successfully!");
   console.log("═".repeat(60));
   console.log(`
 Next steps:
   1. cd ${config.outputDir}
-  2. deno task build          # Build the project
-  3. deno task test           # Build and run the executable
+  2. deno task build          # Build the plugin
+  3. deno task build:debug    # Build in Debug mode
 
 Available tasks:
   • deno task build           - Build in Release mode
   • deno task build:debug     - Build in Debug mode
   • deno task clean           - Clean build directory
   • deno task rebuild         - Clean and rebuild
-  • deno task test            - Build and run tests
   • deno task format          - Format TypeScript files
   • deno task lint            - Lint TypeScript files
+
+Generated plugin formats:
+  • AU (Audio Unit) - macOS
+  • VST3 - Windows/macOS/Linux
+  • Standalone - All platforms
+
+Plugin location after build:
+  • macOS: build/${config.namePascal}_artefacts/
+  • Windows: build/${config.namePascal}_artefacts/
+  • Linux: build/${config.namePascal}_artefacts/
 `);
 }
 
 async function main(): Promise<void> {
   const args = parseArgs(Deno.args, {
     boolean: ["help", "with-git"],
-    string: ["name", "author", "version", "output"],
+    string: ["name", "author", "version", "output", "manufacturer-code", "plugin-code", "juce-tag"],
     default: {
-      name: "MyApp",
+      name: "MyPlugin",
       author: "Your Name",
-      version: "1.0.0",
+      version: "0.0.1",
+      "manufacturer-code": "Manu",
+      "plugin-code": "Plug",
+      "juce-tag": "master",
     },
     alias: {
       h: "help",
@@ -260,17 +305,22 @@ async function main(): Promise<void> {
   }
 
   const projectName = args.name;
-  const nameLower = toSnakeCase(projectName);
-  const nameUpper = nameLower.toUpperCase();
+  const namePascal = toPascalCase(projectName);
+  const nameSnake = toSnakeCase(projectName);
+  const nameUpper = nameSnake.toUpperCase();
 
-  const config: ProjectConfig = {
+  const config: JucePluginConfig = {
     name: projectName,
-    nameLower,
+    namePascal,
+    nameSnake,
     nameUpper,
     author: args.author,
     version: args.version,
     outputDir: args.output || projectName.toLowerCase().replace(/\s+/g, "-"),
+    manufacturerCode: args["manufacturer-code"],
+    pluginCode: args["plugin-code"],
     withGit: args["with-git"],
+    juceTag: args["juce-tag"],
   };
 
   await generateProject(config);
