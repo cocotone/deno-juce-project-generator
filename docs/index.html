@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deno JUCE Project Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .lang-select {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+        .lang-select h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .lang-select .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+        .lang-cards {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 60px;
+        }
+        .lang-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 40px 60px;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .lang-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #70c0ba;
+            transform: translateY(-5px);
+        }
+        .lang-card .flag {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        .lang-card .lang-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .lang-card .lang-native {
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+        .lang-select footer {
+            margin-top: auto;
+            text-align: center;
+            width: 100%;
+            opacity: 0.7;
+        }
+        .lang-select footer a {
+            color: #70c0ba;
+        }
+
+        @media (max-width: 600px) {
+            .lang-select h1 {
+                font-size: 1.6rem;
+            }
+            .lang-select .subtitle {
+                font-size: 1rem;
+                margin-bottom: 30px;
+            }
+            .lang-cards {
+                gap: 20px;
+                margin-bottom: 40px;
+            }
+            .lang-card {
+                padding: 30px 50px;
+            }
+            .lang-card .flag {
+                font-size: 3rem;
+            }
+            .lang-card .lang-name {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="lang-select">
+        <h1>Deno JUCE Project Generator</h1>
+        <p class="subtitle">Select your language / 言語を選択してください</p>
+
+        <div class="lang-cards">
+            <a href="en/index.html" class="lang-card">
+                <div class="flag">🇺🇸</div>
+                <div class="lang-name">English</div>
+                <div class="lang-native">English</div>
+            </a>
+            <a href="ja/index.html" class="lang-card">
+                <div class="flag">🇯🇵</div>
+                <div class="lang-name">Japanese</div>
+                <div class="lang-native">日本語</div>
+            </a>
+        </div>
+
+        <footer>
+            <p>
+                <a href="https://github.com/cocotone/deno-juce-project-generator">GitHub Repository</a> |
+                MIT License
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

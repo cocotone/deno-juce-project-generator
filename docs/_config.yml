@@ -1,0 +1,11 @@
+# GitHub Pages Configuration
+title: Deno JUCE Project Generator
+description: Generate JUCE audio plugin projects with a one-line Deno URL
+baseurl: "/deno-juce-project-generator"
+url: "https://cocotone.github.io"
+
+# Exclude files from build
+exclude:
+  - README.md
+  - LICENSE
+  - .gitignore
