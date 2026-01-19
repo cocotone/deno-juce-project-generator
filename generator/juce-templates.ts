@@ -82,6 +82,7 @@ juce_add_plugin(${config.namePascal}
     # ICON_BIG ...                              # ICON_* arguments specify a path to an image file to use as an icon for the Standalone
     # ICON_SMALL ...
     COMPANY_NAME "${config.author}"
+    BUNDLE_ID "com.${config.author.replace(/\s+/g, "").toLowerCase()}.${config.namePascal.toLowerCase()}"
     # IS_SYNTH TRUE/FALSE                       # Is this a synth or an effect?
     # NEEDS_MIDI_INPUT TRUE/FALSE               # Does the plugin need midi input?
     # NEEDS_MIDI_OUTPUT TRUE/FALSE              # Does the plugin need midi output?
