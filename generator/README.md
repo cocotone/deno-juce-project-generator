@@ -17,7 +17,7 @@ deno run --allow-read --allow-write --allow-run --allow-net \
 # With options
 deno run --allow-read --allow-write --allow-run --allow-net \
   https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
-  --name "MySynth" \
+  --name "MyAudioPlugin" \
   --author "Cocotone" \
   --version "1.0.0" \
   --output ./my-synth \
@@ -114,7 +114,7 @@ By default, the generator clones the `master` branch of JUCE. You can specify a 
 ```bash
 # Use a specific JUCE version
 deno run --allow-read --allow-write --allow-run --allow-net generate.ts \
-  --name "MyPlugin" \
+  --name "MyAudioPlugin" \
   --juce-tag "7.0.9"
 ```
 
@@ -159,7 +159,7 @@ deno run --allow-read --allow-write --allow-run --allow-net \
 # オプション付き
 deno run --allow-read --allow-write --allow-run --allow-net \
   https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
-  --name "MySynth" \
+  --name "MyAudioPlugin" \
   --author "Cocotone" \
   --version "1.0.0" \
   --output ./my-synth \
@@ -172,7 +172,7 @@ deno run --allow-read --allow-write --allow-run --allow-net \
 
 ```bash
 cd generator
-deno run --allow-read --allow-write --allow-run --allow-net generate.ts --name "TestPlugin"
+deno run --allow-read --allow-write --allow-run --allow-net generate.ts --name "MyAudioPlugin"
 ```
 
 ## オプション
@@ -256,7 +256,7 @@ build/<PluginName>_artefacts/<Configuration>/
 ```bash
 # 特定のJUCEバージョンを使用
 deno run --allow-read --allow-write --allow-run --allow-net generate.ts \
-  --name "MyPlugin" \
+  --name "MyAudioPlugin" \
   --juce-tag "7.0.9"
 ```
 

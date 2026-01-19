@@ -119,7 +119,7 @@ deno task run      # Run the Standalone app
 By default, the generator clones the `master` branch. To use a specific version:
 
 ```bash
-deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyPlugin" --juce-tag "7.0.9"
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --juce-tag "7.0.9"
 ```
 
 ## Documentation
@@ -259,7 +259,7 @@ deno task run      # Standaloneアプリを実行
 デフォルトでは `master` ブランチをクローンします。特定のバージョンを使用する場合:
 
 ```bash
-deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyPlugin" --juce-tag "7.0.9"
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --juce-tag "7.0.9"
 ```
 
 ## ドキュメント
