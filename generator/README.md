@@ -136,7 +136,7 @@ Edit `CMakeLists.txt` to configure:
 
 ## License
 
-MIT License
+BSD 3-Clause License
 
 ---
 
@@ -278,4 +278,4 @@ deno run --allow-read --allow-write --allow-run --allow-net generate.ts \
 
 ## ライセンス
 
-MIT License
+BSD 3-Clause License

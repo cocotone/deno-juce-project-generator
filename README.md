@@ -135,7 +135,7 @@ Full documentation is available at: https://cocotone.github.io/deno-juce-project
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICENSE) file for details.
 
 **Note:** The JUCE framework has its own licensing terms. Please review the [JUCE License](https://juce.com/legal/juce-8-licence/) for your use case.
 
@@ -275,6 +275,6 @@ deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generat
 
 ## ライセンス
 
-このプロジェクトはMITライセンスの下で公開されています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
+このプロジェクトは3条項BSDライセンスの下で公開されています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
 
 **注意:** JUCEフレームワークには独自のライセンス条項があります。ご利用のケースに応じて [JUCEライセンス](https://juce.com/legal/juce-8-licence/) を確認してください。
