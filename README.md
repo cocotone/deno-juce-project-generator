@@ -44,20 +44,13 @@ This generator clones JUCE from [https://github.com/juce-framework/JUCE](https:/
 ### Generate a Plugin Project
 
 ```bash
-deno run --allow-read --allow-write --allow-run --allow-net --allow-env \
-  https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
-  --name "MyAudioPlugin" \
-  --author "Your Name" \
-  --output ./my-audio-plugin \
-  --with-git
+deno run --allow-read --allow-write --allow-run --allow-net --allow-env https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --author "Your Name" --output ./my-audio-plugin --with-git
 ```
 
 Or with short flags:
 
 ```bash
-deno run -A \
-  https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
-  -n "MyAudioPlugin" -a "Your Name" -o ./my-audio-plugin --with-git
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts -n "MyAudioPlugin" -a "Your Name" -o ./my-audio-plugin --with-git
 ```
 
 ### Build and Run
@@ -126,10 +119,7 @@ deno task run      # Run the Standalone app
 By default, the generator clones the `master` branch. To use a specific version:
 
 ```bash
-deno run -A \
-  https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
-  --name "MyPlugin" \
-  --juce-tag "7.0.9"
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyPlugin" --juce-tag "7.0.9"
 ```
 
 ## Documentation
@@ -194,12 +184,13 @@ JUCEを使ったオーディオプラグイン開発には、従来いくつか�
 ### プラグインプロジェクトを生成
 
 ```bash
-deno run --allow-read --allow-write --allow-run --allow-net --allow-env \
-  https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
-  --name "MyAudioPlugin" \
-  --author "Your Name" \
-  --output ./my-audio-plugin \
-  --with-git
+deno run --allow-read --allow-write --allow-run --allow-net --allow-env https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --author "Your Name" --output ./my-audio-plugin --with-git
+```
+
+短いフラグを使用する場合:
+
+```bash
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts -n "MyAudioPlugin" -a "Your Name" -o ./my-audio-plugin --with-git
 ```
 
 ### ビルドと実行
@@ -210,9 +201,77 @@ deno task build    # Releaseモードでビルド
 deno task run      # Standaloneアプリを実行
 ```
 
+## コマンドオプション
+
+| オプション | 短縮形 | デフォルト | 説明 |
+|-----------|--------|-----------|------|
+| `--name` | `-n` | `MyPlugin` | プラグイン名 |
+| `--author` | `-a` | `Your Name` | 作者/会社名 |
+| `--version` | `-v` | `0.0.1` | プラグインバージョン |
+| `--output` | `-o` | (プラグイン名) | 出力ディレクトリ |
+| `--manufacturer-code` | | `Manu` | 4文字のメーカーコード |
+| `--plugin-code` | | `Plug` | 4文字のプラグインコード |
+| `--juce-tag` | | `master` | JUCEのgitタグ/ブランチ |
+| `--with-git` | | `false` | gitリポジトリを初期化 |
+| `--help` | `-h` | | ヘルプを表示 |
+
+## 生成されるプロジェクト構造
+
+```
+<plugin-name>/
+├── CMakeLists.txt          # CMake設定
+├── deno.json               # Denoタスク
+├── build.ts                # ビルドスクリプト
+├── build.config.ts         # ビルド設定
+├── cmake-file-api.ts       # CMake File API連携
+├── cmake-types.ts          # TypeScript型定義
+├── .gitignore
+├── External/
+│   └── JUCE/               # JUCEフレームワーク（自動クローン）
+└── Source/
+    ├── PluginProcessor.h
+    ├── PluginProcessor.cpp
+    ├── PluginEditor.h
+    └── PluginEditor.cpp
+```
+
+## 利用可能なビルドタスク
+
+| タスク | 説明 |
+|--------|------|
+| `deno task build` | Releaseモードでビルド |
+| `deno task build:debug` | Debugモードでビルド |
+| `deno task clean` | ビルドディレクトリを削除 |
+| `deno task rebuild` | クリーンして再ビルド |
+| `deno task run` | ビルドしてStandaloneを実行 |
+| `deno task run:debug` | ビルドしてStandaloneを実行（Debug） |
+| `deno task format` | TypeScriptファイルをフォーマット |
+| `deno task lint` | TypeScriptファイルをリント |
+
+## 生成されるプラグイン形式
+
+- **VST3** - Windows, macOS, Linux
+- **AU (Audio Unit)** - macOSのみ
+- **Standalone** - 全プラットフォーム
+
+## JUCEバージョンの指定
+
+デフォルトでは `master` ブランチをクローンします。特定のバージョンを使用する場合:
+
+```bash
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyPlugin" --juce-tag "7.0.9"
+```
+
 ## ドキュメント
 
 完全なドキュメントはこちら: https://cocotone.github.io/deno-juce-project-generator/
+
+## 使用技術
+
+- [JUCE](https://juce.com/) - オーディオアプリケーション向けクロスプラットフォームC++フレームワーク
+- [Deno](https://deno.land/) - セキュアなTypeScript/JavaScriptランタイム
+- [dax](https://jsr.io/@david/dax) - Deno向けクロスプラットフォームシェルツール
+- [CMake](https://cmake.org/) - クロスプラットフォームビルドシステム
 
 ## ライセンス
 
