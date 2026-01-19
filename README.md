@@ -21,9 +21,10 @@ Our goal is to make audio plugin development more accessible to everyone, from s
 
 When using this generator, you must comply with JUCE's licensing terms:
 
-- **Starter/Educational use**: JUCE can be used for free under the [JUCE Starter license](https://juce.com/legal/juce-8-licence/)
-- **Commercial use**: Requires a commercial license from JUCE
-- **Open Source**: Available under AGPLv3 for open-source projects
+- **Personal/Small commercial use**: Free under the [JUCE Starter license](https://juce.com/legal/juce-8-licence/) (up to $20,000 annual revenue, commercial product release allowed)
+- **Educational use**: Free under the [JUCE Educational license](https://juce.com/legal/juce-8-licence/) (limited to educational purposes at universities, schools, and accredited online courses; no commercial use)
+- **Commercial use**: If annual revenue exceeds $20,000, requires a commercial license from JUCE (Indie: up to $300,000 / Pro: unlimited)
+- **Open Source**: Available under AGPLv3
 
 Please review the [JUCE License](https://juce.com/legal/juce-8-licence/) before distributing any plugins created with this generator.
 
@@ -161,9 +162,10 @@ JUCEを使ったオーディオプラグイン開発には、従来いくつか�
 
 このジェネレータを使用する際は、JUCEのライセンス条項を遵守する必要があります：
 
-- **個人/教育目的**: [JUCE Starter license](https://juce.com/legal/juce-8-licence/) の下で無料で使用可能
-- **商用利用**: JUCEの商用ライセンスが必要
-- **オープンソース**: オープンソースプロジェクト向けにAGPLv3で利用可能
+- **個人/小規模商用利用**: [JUCE Starter license](https://juce.com/legal/juce-8-licence/) の下で無料で使用可能（年間収益$20,000まで、商用製品のリリース可）
+- **教育利用**: [JUCE Educational license](https://juce.com/legal/juce-8-licence/) の下で無料で使用可能（大学・学校・認定オンラインコースでの教育目的に限定、商用利用不可）
+- **商用利用**: 年間収益$20,000超の場合、JUCEの商用ライセンス（Indie: $300,000まで / Pro: 無制限）が必要
+- **オープンソース**: AGPLv3の下で利用可能
 
 このジェネレータで作成したプラグインを配布する前に、[JUCEライセンス](https://juce.com/legal/juce-8-licence/) を確認してください。
 

@@ -424,6 +424,41 @@ tr:nth-child(even) {
 }
 
 /* ========================================
+   Notice Box
+   ======================================== */
+
+.notice-box {
+    background-color: #fff8e1;
+    border: 1px solid #ffe082;
+    border-left: 4px solid var(--warning-color);
+    border-radius: 6px;
+    padding: 20px 25px;
+    margin: 15px 0;
+}
+
+.notice-box p {
+    margin-bottom: 12px;
+}
+
+.notice-box p:last-child {
+    margin-bottom: 0;
+}
+
+.notice-box ul {
+    margin-bottom: 12px;
+    margin-left: 20px;
+}
+
+.notice-box li {
+    margin-bottom: 6px;
+}
+
+.notice-box a {
+    color: var(--primary-dark);
+    font-weight: 500;
+}
+
+/* ========================================
    Footer
    ======================================== */
 
