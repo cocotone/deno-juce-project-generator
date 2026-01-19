@@ -46,9 +46,9 @@ This generator clones JUCE from [https://github.com/juce-framework/JUCE](https:/
 ```bash
 deno run --allow-read --allow-write --allow-run --allow-net --allow-env \
   https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
-  --name "MySynth" \
+  --name "MyAudioPlugin" \
   --author "Your Name" \
-  --output ./my-synth \
+  --output ./my-audio-plugin \
   --with-git
 ```
 
@@ -57,13 +57,13 @@ Or with short flags:
 ```bash
 deno run -A \
   https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
-  -n "MySynth" -a "Your Name" -o ./my-synth --with-git
+  -n "MyAudioPlugin" -a "Your Name" -o ./my-audio-plugin --with-git
 ```
 
 ### Build and Run
 
 ```bash
-cd my-synth
+cd my-audio-plugin
 deno task build    # Build in Release mode
 deno task run      # Run the Standalone app
 ```
@@ -196,16 +196,16 @@ JUCEを使ったオーディオプラグイン開発には、従来いくつか�
 ```bash
 deno run --allow-read --allow-write --allow-run --allow-net --allow-env \
   https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \
-  --name "MySynth" \
+  --name "MyAudioPlugin" \
   --author "Your Name" \
-  --output ./my-synth \
+  --output ./my-audio-plugin \
   --with-git
 ```
 
 ### ビルドと実行
 
 ```bash
-cd my-synth
+cd my-audio-plugin
 deno task build    # Releaseモードでビルド
 deno task run      # Standaloneアプリを実行
 ```
