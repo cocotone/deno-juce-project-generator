@@ -594,9 +594,9 @@ export async function getDefaultVSGenerator(
   if (specifiedVersion) {
     if (!isValidVSVersion(specifiedVersion)) {
       throw new Error(
-        \\\`Invalid Visual Studio version: \\\${specifiedVersion}. Supported: \\\${
+        \`Invalid Visual Studio version: \${specifiedVersion}. Supported: \${
           SUPPORTED_VS_VERSIONS.map((v) => v.year).join(", ")
-        }\\\`
+        }\`
       );
     }
     return getVSGeneratorByYear(specifiedVersion)!;
@@ -607,7 +607,7 @@ export async function getDefaultVSGenerator(
 
   if (latest) {
     console.log(
-      \\\`✅ Auto-detected Visual Studio \\\${latest.year} at: \\\${latest.path}\\\`
+      \`✅ Auto-detected Visual Studio \${latest.year} at: \${latest.path}\`
     );
     return latest.generator;
   }
