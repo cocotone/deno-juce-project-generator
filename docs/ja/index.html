@@ -183,6 +183,12 @@ deno task run          # Standaloneアプリを実行</code></pre>
                             <td>JUCEのgitタグ/ブランチ</td>
                         </tr>
                         <tr>
+                            <td><code>--vs-version</code></td>
+                            <td></td>
+                            <td>(自動検出)</td>
+                            <td>Visual Studioバージョン: 2019, 2022, または 2026（Windowsのみ）</td>
+                        </tr>
+                        <tr>
                             <td><code>--with-git</code></td>
                             <td></td>
                             <td>false</td>
@@ -266,7 +272,12 @@ deno task run          # Standaloneアプリを実行</code></pre>
                     <a href="https://git-scm.com/">git-scm.com</a>
                 </li>
                 <li>
-                    <strong>C++コンパイラ</strong> - Visual Studio 2022 (Windows)、Xcode (macOS)、GCC 8+ (Linux)
+                    <strong>C++コンパイラ</strong>
+                    <ul>
+                        <li>Windows: Visual Studio 2019, 2022, または 2026</li>
+                        <li>macOS: Xcode Command Line Tools</li>
+                        <li>Linux: GCC 8+ または Clang 8+</li>
+                    </ul>
                 </li>
             </ul>
         </section>
