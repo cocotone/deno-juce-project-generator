@@ -17,7 +17,7 @@ export interface VSVersion {
 // Supported Visual Studio versions
 export const SUPPORTED_VS_VERSIONS: VSVersion[] = [
   {
-    year: "2026",
+    year: "18",
     version: "18",
     generator: "Visual Studio 18 2026",
   },
