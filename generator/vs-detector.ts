@@ -5,6 +5,8 @@
  * Supports Visual Studio 2019, 2022, and 2026.
  */
 
+import { join } from "jsr:@std/path@1.0.8";
+
 export interface VSVersion {
   year: string;
   version: string;
@@ -44,8 +46,8 @@ export async function detectInstalledVSVersions(): Promise<VSVersion[]> {
   try {
     // Common Visual Studio installation base paths
     const basePaths = [
-      "C:\\Program Files\\Microsoft Visual Studio",
-      "C:\\Program Files (x86)\\Microsoft Visual Studio",
+      join("C:", "Program Files", "Microsoft Visual Studio"),
+      join("C:", "Program Files (x86)", "Microsoft Visual Studio"),
     ];
 
     // Check each supported version
@@ -55,13 +57,13 @@ export async function detectInstalledVSVersions(): Promise<VSVersion[]> {
         const editions = ["Community", "Professional", "Enterprise"];
 
         for (const edition of editions) {
-          const fullPath = `${basePath}\\${vsVersion.year}\\${edition}`;
+          const fullPath = join(basePath, vsVersion.year, edition);
 
           try {
             const stat = await Deno.stat(fullPath);
             if (stat.isDirectory) {
               // Check if VC tools are installed
-              const vcToolsPath = `${fullPath}\\VC\\Tools\\MSVC`;
+              const vcToolsPath = join(fullPath, "VC", "Tools", "MSVC");
               try {
                 await Deno.stat(vcToolsPath);
                 installedVersions.push({
