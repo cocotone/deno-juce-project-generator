@@ -36,13 +36,15 @@ import {
   generateJuceBuildConfig,
   generateJuceCMakeFileAPI,
   generateJuceCMakeTypes,
-  generateVSDetector,
   generateJuceGitignore,
   generatePluginProcessorH,
   generatePluginProcessorCpp,
   generatePluginEditorH,
   generatePluginEditorCpp,
 } from "./juce-templates.ts";
+
+// URL for vs-detector.ts (resolved relative to this script)
+const VS_DETECTOR_URL = new URL("./vs-detector.ts", import.meta.url).href;
 
 export interface JucePluginConfig {
   name: string;
@@ -106,6 +108,21 @@ async function createFile(
 ): Promise<void> {
   await Deno.writeTextFile(path, content);
   console.log(`  ✅ ${description}: ${path}`);
+}
+
+async function downloadFile(
+  url: string,
+  destPath: string,
+  description: string
+): Promise<void> {
+  console.log(`  ⬇️  Downloading ${description}...`);
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to download ${url}: ${response.status} ${response.statusText}`);
+  }
+  const content = await response.text();
+  await Deno.writeTextFile(destPath, content);
+  console.log(`  ✅ ${description}: ${destPath}`);
 }
 
 async function cloneJuce(outputDir: string, juceTag: string): Promise<void> {
@@ -208,9 +225,9 @@ async function generateProject(config: JucePluginConfig): Promise<void> {
     "cmake-types.ts"
   );
 
-  await createFile(
+  await downloadFile(
+    VS_DETECTOR_URL,
     join(config.outputDir, "vs-detector.ts"),
-    generateVSDetector(),
     "vs-detector.ts"
   );
 
