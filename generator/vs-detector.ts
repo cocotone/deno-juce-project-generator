@@ -1,7 +1,7 @@
 /**
  * Visual Studio Version Detection Utility
  *
- * Detects installed Visual Studio versions on Windows.
+ * Detects installed Visual Studio versions on Windows using vswhere.exe.
  * Supports Visual Studio 2019, 2022, and 2026.
  */
 
@@ -12,81 +12,244 @@ export interface VSVersion {
   version: string;
   generator: string;
   path?: string;
+  displayName?: string;
+  installationVersion?: string;
 }
 
-// Supported Visual Studio versions
+/** Raw instance data from vswhere.exe output */
+interface VSWhereInstance {
+  instanceId: string;
+  installationPath: string;
+  installationVersion: string;
+  displayName: string;
+  productLineVersion: string; // "2022", "2019", or "18" for VS2026
+}
+
+/** Map from productLineVersion to CMake generator info */
+const VS_VERSION_MAP: Record<string, { version: string; generatorYear: string }> = {
+  "18": { version: "18", generatorYear: "2026" },
+  "2022": { version: "17", generatorYear: "2022" },
+  "2019": { version: "16", generatorYear: "2019" },
+};
+
+/** Supported Visual Studio versions for external use */
 export const SUPPORTED_VS_VERSIONS: VSVersion[] = [
+  { year: "2026", version: "18", generator: "Visual Studio 18 2026" },
+  { year: "2022", version: "17", generator: "Visual Studio 17 2022" },
+  { year: "2019", version: "16", generator: "Visual Studio 16 2019" },
+];
+
+/** Supported year values for validation */
+const SUPPORTED_YEARS = SUPPORTED_VS_VERSIONS.map((v) => v.year);
+
+/** Known Visual Studio installation paths for fallback detection */
+const VS_KNOWN_PATHS: { year: string; paths: string[] }[] = [
   {
-    year: "18",
-    version: "18",
-    generator: "Visual Studio 18 2026",
+    year: "2026",
+    paths: [
+      join("C:", "Program Files", "Microsoft Visual Studio", "18", "Enterprise"),
+      join("C:", "Program Files", "Microsoft Visual Studio", "18", "Professional"),
+      join("C:", "Program Files", "Microsoft Visual Studio", "18", "Community"),
+      join("C:", "Program Files", "Microsoft Visual Studio", "18", "Preview"),
+    ],
   },
   {
     year: "2022",
-    version: "17",
-    generator: "Visual Studio 17 2022",
+    paths: [
+      join("C:", "Program Files", "Microsoft Visual Studio", "2022", "Enterprise"),
+      join("C:", "Program Files", "Microsoft Visual Studio", "2022", "Professional"),
+      join("C:", "Program Files", "Microsoft Visual Studio", "2022", "Community"),
+      join("C:", "Program Files", "Microsoft Visual Studio", "2022", "Preview"),
+    ],
   },
   {
     year: "2019",
-    version: "16",
-    generator: "Visual Studio 16 2019",
+    paths: [
+      join("C:", "Program Files (x86)", "Microsoft Visual Studio", "2019", "Enterprise"),
+      join("C:", "Program Files (x86)", "Microsoft Visual Studio", "2019", "Professional"),
+      join("C:", "Program Files (x86)", "Microsoft Visual Studio", "2019", "Community"),
+      join("C:", "Program Files (x86)", "Microsoft Visual Studio", "2019", "Preview"),
+    ],
   },
 ];
 
+/** Get the default vswhere.exe path */
+function getVSWherePath(): string {
+  return join(
+    "C:",
+    "Program Files (x86)",
+    "Microsoft Visual Studio",
+    "Installer",
+    "vswhere.exe"
+  );
+}
+
 /**
- * Detect installed Visual Studio versions by checking common installation paths
+ * Parse vswhere.exe text output into structured instances
+ */
+function parseVSWhereOutput(output: string): VSWhereInstance[] {
+  const instances: VSWhereInstance[] = [];
+  // Handle both Windows (\r\n) and Unix (\n) line endings
+  const normalizedOutput = output.replace(/\r\n/g, "\n");
+  const blocks = normalizedOutput.trim().split(/\n\n+/);
+
+  for (const block of blocks) {
+    if (!block.trim()) continue;
+
+    const props: Record<string, string> = {};
+    for (const line of block.split("\n")) {
+      const match = line.match(/^([^:]+):\s*(.*)$/);
+      if (match) {
+        props[match[1].trim()] = match[2].trim();
+      }
+    }
+
+    // Extract required fields
+    if (props["instanceId"] && props["installationPath"]) {
+      instances.push({
+        instanceId: props["instanceId"],
+        installationPath: props["installationPath"],
+        installationVersion: props["installationVersion"] || "",
+        displayName: props["displayName"] || "",
+        productLineVersion: props["catalog_productLineVersion"] || "",
+      });
+    }
+  }
+
+  return instances;
+}
+
+/**
+ * Convert VSWhereInstance to VSVersion
+ */
+function instanceToVSVersion(instance: VSWhereInstance): VSVersion | null {
+  const mapEntry = VS_VERSION_MAP[instance.productLineVersion];
+  if (!mapEntry) {
+    return null;
+  }
+
+  return {
+    year: mapEntry.generatorYear,
+    version: mapEntry.version,
+    generator: `Visual Studio ${mapEntry.version} ${mapEntry.generatorYear}`,
+    path: instance.installationPath,
+    displayName: instance.displayName,
+    installationVersion: instance.installationVersion,
+  };
+}
+
+/**
+ * Fallback: Detect Visual Studio by checking known installation paths
+ */
+async function detectVSByKnownPaths(): Promise<VSVersion[]> {
+  const versions: VSVersion[] = [];
+
+  for (const entry of VS_KNOWN_PATHS) {
+    for (const vsPath of entry.paths) {
+      try {
+        const stat = await Deno.stat(vsPath);
+        if (stat.isDirectory) {
+          const vsVersion = SUPPORTED_VS_VERSIONS.find((v) => v.year === entry.year);
+          if (vsVersion) {
+            versions.push({
+              ...vsVersion,
+              path: vsPath,
+            });
+            // Found one for this year, skip other editions
+            break;
+          }
+        }
+      } catch {
+        // Path doesn't exist, continue
+      }
+    }
+  }
+
+  return versions;
+}
+
+/**
+ * Execute vswhere.exe and return raw output
+ */
+async function runVSWhere(): Promise<string> {
+  const vsWherePath = getVSWherePath();
+  const command = new Deno.Command(vsWherePath, {
+    args: ["-all", "-prerelease"],
+    stdout: "piped",
+    stderr: "piped",
+  });
+
+  const { code, stdout, stderr } = await command.output();
+
+  if (code !== 0) {
+    const errorText = new TextDecoder().decode(stderr);
+    throw new Error(`vswhere.exe failed with code ${code}: ${errorText}`);
+  }
+
+  return new TextDecoder().decode(stdout);
+}
+
+/**
+ * Detect installed Visual Studio versions using vswhere.exe
+ * Falls back to checking known installation paths if vswhere.exe fails
  */
 export async function detectInstalledVSVersions(): Promise<VSVersion[]> {
   if (Deno.build.os !== "windows") {
     return [];
   }
 
-  const installedVersions: VSVersion[] = [];
+  // Try vswhere.exe first
+  const vswhereResult = await detectVSByVSWhere();
+  if (vswhereResult.length > 0) {
+    return vswhereResult;
+  }
 
+  // Fallback to known paths
+  console.warn("⚠️  Falling back to known path detection...");
+  return await detectVSByKnownPaths();
+}
+
+/**
+ * Detect Visual Studio using vswhere.exe
+ */
+async function detectVSByVSWhere(): Promise<VSVersion[]> {
+  const vsWherePath = getVSWherePath();
   try {
-    // Common Visual Studio installation base paths
-    const basePaths = [
-      join("C:", "Program Files", "Microsoft Visual Studio"),
-      join("C:", "Program Files (x86)", "Microsoft Visual Studio"),
-    ];
-
-    // Check each supported version
-    for (const vsVersion of SUPPORTED_VS_VERSIONS) {
-      for (const basePath of basePaths) {
-        // Try both Community, Professional, and Enterprise editions
-        const editions = ["Community", "Professional", "Enterprise"];
-
-        for (const edition of editions) {
-          const fullPath = join(basePath, vsVersion.year, edition);
-
-          try {
-            const stat = await Deno.stat(fullPath);
-            if (stat.isDirectory) {
-              // Check if VC tools are installed
-              const vcToolsPath = join(fullPath, "VC", "Tools", "MSVC");
-              try {
-                await Deno.stat(vcToolsPath);
-                installedVersions.push({
-                  ...vsVersion,
-                  path: fullPath,
-                });
-                break; // Found this version, no need to check other editions
-              } catch {
-                // VC tools not found in this edition, try next
-              }
-            }
-          } catch {
-            // This path doesn't exist, try next
-          }
-        }
-      }
-    }
+    // Check if vswhere.exe exists
+    await Deno.stat(vsWherePath);
   } catch (error) {
-    console.warn("⚠️  Failed to detect Visual Studio versions:", error);
+    if (error instanceof Deno.errors.NotFound) {
+      console.warn(`⚠️  vswhere.exe not found at: ${vsWherePath}`);
+    } else if (error instanceof Deno.errors.PermissionDenied) {
+      console.warn(
+        `⚠️  Permission denied accessing vswhere.exe. Run with --allow-read flag.`
+      );
+    } else {
+      console.warn(`⚠️  Failed to check vswhere.exe: ${error}`);
+    }
     return [];
   }
 
-  return installedVersions;
+  try {
+    const output = await runVSWhere();
+    const instances = parseVSWhereOutput(output);
+
+    const versions: VSVersion[] = [];
+    for (const instance of instances) {
+      const vsVersion = instanceToVSVersion(instance);
+      if (vsVersion) {
+        versions.push(vsVersion);
+      }
+    }
+
+    // Sort by version number (newest first)
+    versions.sort((a, b) => parseInt(b.version) - parseInt(a.version));
+
+    return versions;
+  } catch (error) {
+    console.warn("⚠️  Failed to run vswhere.exe:", error);
+    return [];
+  }
 }
 
 /**
@@ -99,7 +262,7 @@ export async function getLatestVSVersion(): Promise<VSVersion | null> {
     return null;
   }
 
-  // Return the first one (already sorted by newest first in SUPPORTED_VS_VERSIONS)
+  // Return the first one (already sorted by newest first)
   return installed[0];
 }
 
@@ -108,14 +271,17 @@ export async function getLatestVSVersion(): Promise<VSVersion | null> {
  */
 export function getVSGeneratorByYear(year: string): string | null {
   const vsVersion = SUPPORTED_VS_VERSIONS.find((v) => v.year === year);
-  return vsVersion ? vsVersion.generator : null;
+  if (!vsVersion) {
+    return null;
+  }
+  return vsVersion.generator;
 }
 
 /**
  * Validate Visual Studio version string
  */
 export function isValidVSVersion(version: string): boolean {
-  return SUPPORTED_VS_VERSIONS.some((v) => v.year === version);
+  return SUPPORTED_YEARS.includes(version);
 }
 
 /**
@@ -129,9 +295,7 @@ export async function getDefaultVSGenerator(
   if (specifiedVersion) {
     if (!isValidVSVersion(specifiedVersion)) {
       throw new Error(
-        `Invalid Visual Studio version: ${specifiedVersion}. Supported: ${
-          SUPPORTED_VS_VERSIONS.map((v) => v.year).join(", ")
-        }`
+        `Invalid Visual Studio version: ${specifiedVersion}. Supported: ${SUPPORTED_YEARS.join(", ")}`
       );
     }
     return getVSGeneratorByYear(specifiedVersion)!;
@@ -142,7 +306,7 @@ export async function getDefaultVSGenerator(
 
   if (latest) {
     console.log(
-      `✅ Auto-detected Visual Studio ${latest.year} at: ${latest.path}`
+      `✅ Auto-detected ${latest.displayName || `Visual Studio ${latest.year}`} at: ${latest.path}`
     );
     return latest.generator;
   }
