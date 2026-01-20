@@ -5,8 +5,6 @@
  * Supports Visual Studio 2019, 2022, and 2026.
  */
 
-import $ from "jsr:@david/dax@0.42.0";
-
 export interface VSVersion {
   year: string;
   version: string;
@@ -34,7 +32,7 @@ export const SUPPORTED_VS_VERSIONS: VSVersion[] = [
 ];
 
 /**
- * Detect installed Visual Studio versions using vswhere
+ * Detect installed Visual Studio versions by checking common installation paths
  */
 export async function detectInstalledVSVersions(): Promise<VSVersion[]> {
   if (Deno.build.os !== "windows") {
@@ -44,46 +42,40 @@ export async function detectInstalledVSVersions(): Promise<VSVersion[]> {
   const installedVersions: VSVersion[] = [];
 
   try {
-    // Use vswhere to detect installed Visual Studio instances
-    const vsWherePath =
-      "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe";
+    // Common Visual Studio installation base paths
+    const basePaths = [
+      "C:\\Program Files\\Microsoft Visual Studio",
+      "C:\\Program Files (x86)\\Microsoft Visual Studio",
+    ];
 
-    // Check if vswhere exists
-    try {
-      await Deno.stat(vsWherePath);
-    } catch {
-      console.warn(
-        "⚠️  vswhere.exe not found. Cannot auto-detect Visual Studio versions."
-      );
-      return [];
-    }
+    // Check each supported version
+    for (const vsVersion of SUPPORTED_VS_VERSIONS) {
+      for (const basePath of basePaths) {
+        // Try both Community, Professional, and Enterprise editions
+        const editions = ["Community", "Professional", "Enterprise"];
 
-    // Query all Visual Studio instances
-    const result =
-      await $`${vsWherePath} -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`
-        .quiet()
-        .noThrow();
+        for (const edition of editions) {
+          const fullPath = `${basePath}\\${vsVersion.year}\\${edition}`;
 
-    if (result.code !== 0) {
-      return [];
-    }
-
-    const paths = result.stdout.trim().split("\n").filter((p) => p.trim());
-
-    for (const path of paths) {
-      // Extract version from path (e.g., "2022", "2019")
-      const match = path.match(/\\(\d{4})\\/) ||
-        path.match(/Visual Studio (\d{4})/);
-
-      if (match) {
-        const year = match[1];
-        const vsVersion = SUPPORTED_VS_VERSIONS.find((v) => v.year === year);
-
-        if (vsVersion) {
-          installedVersions.push({
-            ...vsVersion,
-            path: path.trim(),
-          });
+          try {
+            const stat = await Deno.stat(fullPath);
+            if (stat.isDirectory) {
+              // Check if VC tools are installed
+              const vcToolsPath = `${fullPath}\\VC\\Tools\\MSVC`;
+              try {
+                await Deno.stat(vcToolsPath);
+                installedVersions.push({
+                  ...vsVersion,
+                  path: fullPath,
+                });
+                break; // Found this version, no need to check other editions
+              } catch {
+                // VC tools not found in this edition, try next
+              }
+            }
+          } catch {
+            // This path doesn't exist, try next
+          }
         }
       }
     }
