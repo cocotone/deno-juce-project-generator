@@ -19,6 +19,7 @@
  *   --plugin-code <string>       4-char plugin code (default: "Plug")
  *   --with-git                   Initialize git repository
  *   --juce-tag <string>          JUCE git tag/branch (default: "master")
+ *   --vs-version <string>        Visual Studio version: 2019, 2022, or 2026 (Windows only, default: auto-detect)
  *   --help                       Show help
  */
 
@@ -35,6 +36,7 @@ import {
   generateJuceBuildConfig,
   generateJuceCMakeFileAPI,
   generateJuceCMakeTypes,
+  generateVSDetector,
   generateJuceGitignore,
   generatePluginProcessorH,
   generatePluginProcessorCpp,
@@ -54,6 +56,7 @@ export interface JucePluginConfig {
   pluginCode: string;
   withGit: boolean;
   juceTag: string;
+  vsVersion?: string;
 }
 
 function showHelp(): void {
@@ -73,12 +76,13 @@ Options:
   --plugin-code <string>       4-char plugin code (default: "Plug")
   --with-git                   Initialize git repository
   --juce-tag <string>          JUCE git tag/branch (default: "master")
+  --vs-version <string>        Visual Studio version: 2019, 2022, or 2026 (Windows only, default: auto-detect)
   --help                       Show this help
 
 Example:
   deno run --allow-read --allow-write --allow-run --allow-net \\
     https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \\
-    --name "MySynth" --author "Cocotone" --output ./my-synth --with-git
+    --name "MySynth" --author "Cocotone" --output ./my-synth --with-git --vs-version 2022
 `);
 }
 
@@ -204,6 +208,12 @@ async function generateProject(config: JucePluginConfig): Promise<void> {
     "cmake-types.ts"
   );
 
+  await createFile(
+    join(config.outputDir, "vs-detector.ts"),
+    generateVSDetector(),
+    "vs-detector.ts"
+  );
+
   // Plugin source files
   await createFile(
     join(config.outputDir, "Source", "PluginProcessor.h"),
@@ -283,7 +293,7 @@ Plugin location after build:
 async function main(): Promise<void> {
   const args = parseArgs(Deno.args, {
     boolean: ["help", "with-git"],
-    string: ["name", "author", "version", "output", "manufacturer-code", "plugin-code", "juce-tag"],
+    string: ["name", "author", "version", "output", "manufacturer-code", "plugin-code", "juce-tag", "vs-version"],
     default: {
       name: "MyPlugin",
       author: "Your Name",
@@ -323,6 +333,7 @@ async function main(): Promise<void> {
     pluginCode: args["plugin-code"],
     withGit: args["with-git"],
     juceTag: args["juce-tag"],
+    vsVersion: args["vs-version"],
   };
 
   await generateProject(config);

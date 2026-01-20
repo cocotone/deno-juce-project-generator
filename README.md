@@ -38,7 +38,7 @@ This generator clones JUCE from [https://github.com/juce-framework/JUCE](https:/
 - [CMake](https://cmake.org/) 3.22+
 - [Git](https://git-scm.com/)
 - C++ Compiler:
-  - Windows: Visual Studio 2022
+  - Windows: Visual Studio 2019, 2022, or 2026
   - macOS: Xcode Command Line Tools
   - Linux: GCC 8+ or Clang 8+
 
@@ -73,6 +73,7 @@ deno task run      # Run the Standalone app
 | `--manufacturer-code` | | `Manu` | 4-char manufacturer code |
 | `--plugin-code` | | `Plug` | 4-char plugin code |
 | `--juce-tag` | | `master` | JUCE git tag/branch |
+| `--vs-version` | | (auto-detect) | Visual Studio version: 2019, 2022, or 2026 (Windows only) |
 | `--with-git` | | `false` | Initialize git repository |
 | `--help` | `-h` | | Show help |
 
@@ -122,6 +123,26 @@ By default, the generator clones the `master` branch. To use a specific version:
 ```bash
 deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --juce-tag "7.0.9"
 ```
+
+## Specifying Visual Studio Version (Windows)
+
+On Windows, the generator automatically detects the latest installed Visual Studio version (2019, 2022, or 2026). You can also explicitly specify a version:
+
+```bash
+# Use Visual Studio 2022
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --vs-version 2022
+
+# Use Visual Studio 2019
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --vs-version 2019
+
+# Use Visual Studio 2026
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --vs-version 2026
+
+# Auto-detect (default behavior)
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin"
+```
+
+The auto-detection uses `vswhere.exe` to find installed Visual Studio instances and selects the newest version. If auto-detection fails, it falls back to Visual Studio 2022.
 
 ## Documentation
 
@@ -179,7 +200,7 @@ JUCEを使ったオーディオプラグイン開発には、従来いくつか�
 - [CMake](https://cmake.org/) 3.22以上
 - [Git](https://git-scm.com/)
 - C++コンパイラ:
-  - Windows: Visual Studio 2022
+  - Windows: Visual Studio 2019, 2022, または 2026
   - macOS: Xcode Command Line Tools
   - Linux: GCC 8+ または Clang 8+
 
@@ -214,6 +235,7 @@ deno task run      # Standaloneアプリを実行
 | `--manufacturer-code` | | `Manu` | 4文字のメーカーコード |
 | `--plugin-code` | | `Plug` | 4文字のプラグインコード |
 | `--juce-tag` | | `master` | JUCEのgitタグ/ブランチ |
+| `--vs-version` | | (自動検出) | Visual Studioバージョン: 2019, 2022, または 2026（Windowsのみ） |
 | `--with-git` | | `false` | gitリポジトリを初期化 |
 | `--help` | `-h` | | ヘルプを表示 |
 
@@ -263,6 +285,26 @@ deno task run      # Standaloneアプリを実行
 ```bash
 deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --juce-tag "7.0.9"
 ```
+
+## Visual Studioバージョンの指定（Windows）
+
+Windowsでは、ジェネレータが自動的に最新のインストール済みVisual Studioバージョン（2019、2022、または2026）を検出します。バージョンを明示的に指定することもできます:
+
+```bash
+# Visual Studio 2022を使用
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --vs-version 2022
+
+# Visual Studio 2019を使用
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --vs-version 2019
+
+# Visual Studio 2026を使用
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin" --vs-version 2026
+
+# 自動検出（デフォルトの動作）
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --name "MyAudioPlugin"
+```
+
+自動検出では、`vswhere.exe`を使用してインストール済みのVisual Studioインスタンスを検索し、最新バージョンを選択します。自動検出に失敗した場合は、Visual Studio 2022にフォールバックします。
 
 ## ドキュメント
 
