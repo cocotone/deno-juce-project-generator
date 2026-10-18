@@ -41,7 +41,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">🎹</div>
                     <h3>JUCEオーディオプラグイン</h3>
-                    <p>VST3、AU、StandaloneプラグインプロジェクトをモダンなCMakeセットアップで生成します。</p>
+                    <p>VST3、AU、Standaloneプラグインに加え、デスクトップGUIアプリやCLIアプリのプロジェクトもモダンなCMakeセットアップで生成します。</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🚀</div>
@@ -125,6 +125,7 @@
             <pre><code class="language-bash">cd my-audio-plugin
 deno task build        # プラグインをビルド
 deno task run          # Standaloneアプリを実行</code></pre>
+                <p>デスクトップGUIアプリは <code>--type gui</code>、コンソールアプリは <code>--type cli</code> を指定します。</p>
         </section>
 
         <section id="options">
@@ -141,10 +142,16 @@ deno task run          # Standaloneアプリを実行</code></pre>
                     </thead>
                     <tbody>
                         <tr>
+                            <td><code>--type</code></td>
+                            <td><code>-t</code></td>
+                            <td>plugin</td>
+                            <td>プロジェクトの種類: plugin、gui（デスクトップアプリ）、cli（コンソールアプリ）</td>
+                        </tr>
+                        <tr>
                             <td><code>--name</code></td>
                             <td><code>-n</code></td>
-                            <td>MyPlugin</td>
-                            <td>プラグイン名</td>
+                            <td>MyPlugin / MyApp / MyCli</td>
+                            <td>プロジェクト名</td>
                         </tr>
                         <tr>
                             <td><code>--author</code></td>
@@ -161,20 +168,20 @@ deno task run          # Standaloneアプリを実行</code></pre>
                         <tr>
                             <td><code>--output</code></td>
                             <td><code>-o</code></td>
-                            <td>(プラグイン名)</td>
+                            <td>(プロジェクト名)</td>
                             <td>出力ディレクトリ</td>
                         </tr>
                         <tr>
                             <td><code>--manufacturer-code</code></td>
                             <td></td>
                             <td>Manu</td>
-                            <td>4文字のメーカーコード</td>
+                            <td>4文字のメーカーコード（pluginのみ）</td>
                         </tr>
                         <tr>
                             <td><code>--plugin-code</code></td>
                             <td></td>
                             <td>Plug</td>
-                            <td>4文字のプラグインコード</td>
+                            <td>4文字のプラグインコード（pluginのみ）</td>
                         </tr>
                         <tr>
                             <td><code>--juce-tag</code></td>

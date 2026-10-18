@@ -1,9 +1,10 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-net --allow-env
 
 /**
- * JUCE Audio Plugin Project Generator
+ * JUCE Project Generator
  *
- * Generate a JUCE audio plugin project locally by running from a remote URL.
+ * Generate a JUCE project (audio plugin, GUI application, or console application)
+ * locally by running from a remote URL.
  * JUCE framework is automatically cloned from GitHub during project generation.
  *
  * Usage:
@@ -11,12 +12,13 @@
  *     https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts
  *
  * Options:
- *   --name <string>              Plugin name (default: "MyPlugin")
+ *   --type <string>              Project type: plugin, gui, or cli (default: "plugin")
+ *   --name <string>              Project name (default: "MyPlugin" / "MyApp" / "MyCli")
  *   --author <string>            Author/Company name (default: "Your Name")
  *   --version <string>           Version (default: "0.0.1")
- *   --output <string>            Output directory (default: plugin name)
- *   --manufacturer-code <string> 4-char manufacturer code (default: "Manu")
- *   --plugin-code <string>       4-char plugin code (default: "Plug")
+ *   --output <string>            Output directory (default: project name)
+ *   --manufacturer-code <string> 4-char manufacturer code (default: "Manu", plugin only)
+ *   --plugin-code <string>       4-char plugin code (default: "Plug", plugin only)
  *   --with-git                   Initialize git repository
  *   --juce-tag <string>          JUCE git tag/branch (default: "master")
  *   --vs-version <string>        Visual Studio version: 2019, 2022, or 2026 (Windows only, default: auto-detect)
@@ -41,12 +43,29 @@ import {
   generatePluginProcessorCpp,
   generatePluginEditorH,
   generatePluginEditorCpp,
+  generateGuiAppMainCpp,
+  generateMainComponentH,
+  generateMainComponentCpp,
+  generateConsoleAppMainCpp,
 } from "./juce-templates.ts";
 
 // URL for vs-detector.ts (resolved relative to this script)
 const VS_DETECTOR_URL = new URL("./vs-detector.ts", import.meta.url).href;
 
-export interface JucePluginConfig {
+export type ProjectType = "plugin" | "gui" | "cli";
+
+const PROJECT_TYPES: Record<ProjectType, { label: string; defaultName: string }> = {
+  plugin: { label: "JUCE Audio Plugin", defaultName: "MyPlugin" },
+  gui: { label: "JUCE GUI Application", defaultName: "MyApp" },
+  cli: { label: "JUCE Console Application", defaultName: "MyCli" },
+};
+
+function isProjectType(value: string): value is ProjectType {
+  return value in PROJECT_TYPES;
+}
+
+export interface JuceProjectConfig {
+  projectType: ProjectType;
   name: string;
   namePascal: string;
   nameSnake: string;
@@ -61,30 +80,43 @@ export interface JucePluginConfig {
   vsVersion?: string;
 }
 
+/** @deprecated Use JuceProjectConfig */
+export type JucePluginConfig = JuceProjectConfig;
+
 function showHelp(): void {
   console.log(`
-JUCE Audio Plugin Project Generator
-=====================================
+JUCE Project Generator
+======================
 
 Usage:
   deno run --allow-read --allow-write --allow-run --allow-net --allow-env <script-url> [options]
 
 Options:
-  --name <string>              Plugin name (default: "MyPlugin")
+  --type <string>              Project type (default: "plugin")
+                                 plugin - Audio plugin (VST3 / AU / Standalone)
+                                 gui    - Desktop GUI application
+                                 cli    - Console (command-line) application
+  --name <string>              Project name (default: "MyPlugin" / "MyApp" / "MyCli")
   --author <string>            Author/Company name (default: "Your Name")
   --version <string>           Version (default: "0.0.1")
-  --output <string>            Output directory (default: plugin name)
-  --manufacturer-code <string> 4-char manufacturer code (default: "Manu")
-  --plugin-code <string>       4-char plugin code (default: "Plug")
+  --output <string>            Output directory (default: project name)
+  --manufacturer-code <string> 4-char manufacturer code (default: "Manu", plugin only)
+  --plugin-code <string>       4-char plugin code (default: "Plug", plugin only)
   --with-git                   Initialize git repository
   --juce-tag <string>          JUCE git tag/branch (default: "master")
   --vs-version <string>        Visual Studio version: 2019, 2022, or 2026 (Windows only, default: auto-detect)
   --help                       Show this help
 
-Example:
+Examples:
   deno run --allow-read --allow-write --allow-run --allow-net \\
     https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \\
     --name "MySynth" --author "Cocotone" --output ./my-synth --with-git --vs-version 2022
+
+  deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \\
+    --type gui --name "MyApp"
+
+  deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts \\
+    --type cli --name "MyCli"
 `);
 }
 
@@ -147,13 +179,44 @@ async function cloneJuce(outputDir: string, juceTag: string): Promise<void> {
   }
 }
 
-async function generateProject(config: JucePluginConfig): Promise<void> {
-  console.log(`\n🎹 Generating JUCE Audio Plugin: ${config.name}`);
+interface SourceFile {
+  fileName: string;
+  content: string;
+}
+
+function getSourceFiles(config: JuceProjectConfig): SourceFile[] {
+  switch (config.projectType) {
+    case "gui":
+      return [
+        { fileName: "Main.cpp", content: generateGuiAppMainCpp(config) },
+        { fileName: "MainComponent.h", content: generateMainComponentH() },
+        { fileName: "MainComponent.cpp", content: generateMainComponentCpp(config) },
+      ];
+    case "cli":
+      return [
+        { fileName: "Main.cpp", content: generateConsoleAppMainCpp() },
+      ];
+    default:
+      return [
+        { fileName: "PluginProcessor.h", content: generatePluginProcessorH(config) },
+        { fileName: "PluginProcessor.cpp", content: generatePluginProcessorCpp(config) },
+        { fileName: "PluginEditor.h", content: generatePluginEditorH(config) },
+        { fileName: "PluginEditor.cpp", content: generatePluginEditorCpp(config) },
+      ];
+  }
+}
+
+async function generateProject(config: JuceProjectConfig): Promise<void> {
+  const typeLabel = PROJECT_TYPES[config.projectType].label;
+
+  console.log(`\n🎹 Generating ${typeLabel}: ${config.name}`);
   console.log(`   Output directory: ${config.outputDir}`);
   console.log(`   Author: ${config.author}`);
   console.log(`   Version: ${config.version}`);
-  console.log(`   Manufacturer Code: ${config.manufacturerCode}`);
-  console.log(`   Plugin Code: ${config.pluginCode}`);
+  if (config.projectType === "plugin") {
+    console.log(`   Manufacturer Code: ${config.manufacturerCode}`);
+    console.log(`   Plugin Code: ${config.pluginCode}`);
+  }
   console.log("");
 
   // Check if the directory already exists
@@ -231,30 +294,14 @@ async function generateProject(config: JucePluginConfig): Promise<void> {
     "vs-detector.ts"
   );
 
-  // Plugin source files
-  await createFile(
-    join(config.outputDir, "Source", "PluginProcessor.h"),
-    generatePluginProcessorH(config),
-    "Source/PluginProcessor.h"
-  );
-
-  await createFile(
-    join(config.outputDir, "Source", "PluginProcessor.cpp"),
-    generatePluginProcessorCpp(config),
-    "Source/PluginProcessor.cpp"
-  );
-
-  await createFile(
-    join(config.outputDir, "Source", "PluginEditor.h"),
-    generatePluginEditorH(config),
-    "Source/PluginEditor.h"
-  );
-
-  await createFile(
-    join(config.outputDir, "Source", "PluginEditor.cpp"),
-    generatePluginEditorCpp(config),
-    "Source/PluginEditor.cpp"
-  );
+  // Source files
+  for (const file of getSourceFiles(config)) {
+    await createFile(
+      join(config.outputDir, "Source", file.fileName),
+      file.content,
+      `Source/${file.fileName}`
+    );
+  }
 
   // .gitignore
   await createFile(
@@ -277,42 +324,56 @@ async function generateProject(config: JucePluginConfig): Promise<void> {
   }
 
   console.log("\n" + "═".repeat(60));
-  console.log("✨ JUCE Audio Plugin project generated successfully!");
+  console.log(`✨ ${typeLabel} project generated successfully!`);
   console.log("═".repeat(60));
-  console.log(`
+  console.log(getNextStepsMessage(config));
+}
+
+function getNextStepsMessage(config: JuceProjectConfig): string {
+  const runDescription = {
+    plugin: "Build and run Standalone",
+    gui: "Build and run the application",
+    cli: "Build and run the application (pass args after --)",
+  }[config.projectType];
+
+  const outputs = {
+    plugin: `Generated plugin formats:
+  • AU (Audio Unit) - macOS
+  • VST3 - Windows/macOS/Linux
+  • Standalone - All platforms
+
+Plugin location after build:`,
+    gui: `Application location after build:`,
+    cli: `Executable location after build:`,
+  }[config.projectType];
+
+  return `
 Next steps:
   1. cd ${config.outputDir}
-  2. deno task build          # Build the plugin
-  3. deno task build:debug    # Build in Debug mode
+  2. deno task build          # Build in Release mode
+  3. deno task run            # ${runDescription}
 
 Available tasks:
   • deno task build           - Build in Release mode
   • deno task build:debug     - Build in Debug mode
   • deno task clean           - Clean build directory
   • deno task rebuild         - Clean and rebuild
-  • deno task run             - Build and run Standalone
-  • deno task run:debug       - Build and run Standalone (Debug)
+  • deno task run             - ${runDescription}
+  • deno task run:debug       - ${runDescription} (Debug)
   • deno task format          - Format TypeScript files
   • deno task lint            - Lint TypeScript files
 
-Generated plugin formats:
-  • AU (Audio Unit) - macOS
-  • VST3 - Windows/macOS/Linux
-  • Standalone - All platforms
-
-Plugin location after build:
-  • macOS: build/${config.namePascal}_artefacts/
-  • Windows: build/${config.namePascal}_artefacts/
-  • Linux: build/${config.namePascal}_artefacts/
-`);
+${outputs}
+  • build/${config.namePascal}_artefacts/<Configuration>/
+`;
 }
 
 async function main(): Promise<void> {
   const args = parseArgs(Deno.args, {
     boolean: ["help", "with-git"],
-    string: ["name", "author", "version", "output", "manufacturer-code", "plugin-code", "juce-tag", "vs-version"],
+    string: ["type", "name", "author", "version", "output", "manufacturer-code", "plugin-code", "juce-tag", "vs-version"],
     default: {
-      name: "MyPlugin",
+      type: "plugin",
       author: "Your Name",
       version: "0.0.1",
       "manufacturer-code": "Manu",
@@ -321,6 +382,7 @@ async function main(): Promise<void> {
     },
     alias: {
       h: "help",
+      t: "type",
       n: "name",
       a: "author",
       v: "version",
@@ -333,12 +395,20 @@ async function main(): Promise<void> {
     Deno.exit(0);
   }
 
-  const projectName = args.name;
+  if (!isProjectType(args.type)) {
+    console.error(`❌ Error: Invalid project type "${args.type}".`);
+    console.error(`   Supported types: ${Object.keys(PROJECT_TYPES).join(", ")}`);
+    Deno.exit(1);
+  }
+  const projectType = args.type;
+
+  const projectName = args.name || PROJECT_TYPES[projectType].defaultName;
   const namePascal = toPascalCase(projectName);
   const nameSnake = toSnakeCase(projectName);
   const nameUpper = nameSnake.toUpperCase();
 
-  const config: JucePluginConfig = {
+  const config: JuceProjectConfig = {
+    projectType,
     name: projectName,
     namePascal,
     nameSnake,

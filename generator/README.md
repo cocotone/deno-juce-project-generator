@@ -1,6 +1,6 @@
 # JUCE Audio Plugin Project Generator
 
-A Deno-based project generator that creates JUCE audio plugin projects locally by running from a remote URL.
+A Deno-based project generator that creates JUCE projects (audio plugin, desktop GUI app, or console app) locally by running from a remote URL.
 JUCE framework is automatically cloned from GitHub during project generation.
 
 ## Usage
@@ -24,6 +24,10 @@ deno run --allow-read --allow-write --allow-run --allow-net \
   --manufacturer-code "Coco" \
   --plugin-code "Msyn" \
   --with-git
+
+# Desktop GUI app / console (CLI) app
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --type gui --name "MyApp"
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --type cli --name "MyCli"
 ```
 
 ### Running Locally
@@ -37,12 +41,13 @@ deno run --allow-read --allow-write --allow-run --allow-net generate.ts --name "
 
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
-| `--name` | `-n` | `MyPlugin` | Plugin name |
+| `--type` | `-t` | `plugin` | Project type: `plugin`, `gui`, or `cli` |
+| `--name` | `-n` | `MyPlugin` / `MyApp` / `MyCli` | Project name |
 | `--author` | `-a` | `Your Name` | Author/Company name |
 | `--version` | `-v` | `0.0.1` | Version |
-| `--output` | `-o` | (plugin name) | Output directory |
-| `--manufacturer-code` | - | `Manu` | 4-char manufacturer code |
-| `--plugin-code` | - | `Plug` | 4-char plugin code |
+| `--output` | `-o` | (project name) | Output directory |
+| `--manufacturer-code` | - | `Manu` | 4-char manufacturer code (plugin only) |
+| `--plugin-code` | - | `Plug` | 4-char plugin code (plugin only) |
 | `--juce-tag` | - | `master` | JUCE git tag/branch |
 | `--with-git` | - | false | Initialize git repository |
 | `--help` | `-h` | - | Show help |
@@ -66,6 +71,9 @@ deno run --allow-read --allow-write --allow-run --allow-net generate.ts --name "
     ├── PluginEditor.h      # Plugin editor (GUI) header
     └── PluginEditor.cpp    # Plugin editor implementation
 ```
+
+- `--type gui`: `Source/` contains `Main.cpp` (JUCEApplication + window), `MainComponent.h`, `MainComponent.cpp`
+- `--type cli`: `Source/` contains `Main.cpp` (`main()` with `juce::ArgumentList`)
 
 ## Post-Generation Workflow
 
@@ -142,7 +150,7 @@ BSD 3-Clause License
 
 # JUCE オーディオプラグイン プロジェクトジェネレーター (日本語)
 
-Denoを使用してリモートURLからJUCEオーディオプラグインプロジェクトを生成するジェネレーターです。
+Denoを使用してリモートURLからJUCEプロジェクト（オーディオプラグイン、デスクトップGUIアプリ、コンソールアプリ）を生成するジェネレーターです。
 JUCEフレームワークはプロジェクト生成時にGitHubから自動的にクローンされます。
 
 ## 使い方
@@ -166,6 +174,10 @@ deno run --allow-read --allow-write --allow-run --allow-net \
   --manufacturer-code "Coco" \
   --plugin-code "Msyn" \
   --with-git
+
+# デスクトップGUIアプリ / コンソール（CLI）アプリ
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --type gui --name "MyApp"
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --type cli --name "MyCli"
 ```
 
 ### ローカルでの実行
@@ -179,12 +191,13 @@ deno run --allow-read --allow-write --allow-run --allow-net generate.ts --name "
 
 | オプション | 短縮形 | デフォルト | 説明 |
 |-----------|--------|-----------|------|
-| `--name` | `-n` | `MyPlugin` | プラグイン名 |
+| `--type` | `-t` | `plugin` | プロジェクトの種類: `plugin`、`gui`、`cli` |
+| `--name` | `-n` | `MyPlugin` / `MyApp` / `MyCli` | プロジェクト名 |
 | `--author` | `-a` | `Your Name` | 作者/会社名 |
 | `--version` | `-v` | `0.0.1` | バージョン |
-| `--output` | `-o` | (プラグイン名) | 出力ディレクトリ |
-| `--manufacturer-code` | - | `Manu` | 4文字のメーカーコード |
-| `--plugin-code` | - | `Plug` | 4文字のプラグインコード |
+| `--output` | `-o` | (プロジェクト名) | 出力ディレクトリ |
+| `--manufacturer-code` | - | `Manu` | 4文字のメーカーコード（pluginのみ） |
+| `--plugin-code` | - | `Plug` | 4文字のプラグインコード（pluginのみ） |
 | `--juce-tag` | - | `master` | JUCEのgitタグ/ブランチ |
 | `--with-git` | - | false | Gitリポジトリを初期化 |
 | `--help` | `-h` | - | ヘルプを表示 |
@@ -208,6 +221,9 @@ deno run --allow-read --allow-write --allow-run --allow-net generate.ts --name "
     ├── PluginEditor.h      # プラグインエディタ (GUI) ヘッダー
     └── PluginEditor.cpp    # プラグインエディタ実装
 ```
+
+- `--type gui`: `Source/` には `Main.cpp`（JUCEApplication + ウィンドウ）、`MainComponent.h`、`MainComponent.cpp` が生成されます
+- `--type cli`: `Source/` には `Main.cpp`（`juce::ArgumentList` を使った `main()`）のみが生成されます
 
 ## 生成後のワークフロー
 

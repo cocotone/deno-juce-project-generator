@@ -1,6 +1,6 @@
 # Deno JUCE Project Generator
 
-Generate JUCE audio plugin projects with a single Deno URL command.
+Generate JUCE projects (audio plugins, desktop GUI apps, and CLI apps) with a single Deno URL command.
 
 [![GitHub Pages](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://cocotone.github.io/deno-juce-project-generator/)
 [![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD3-yellow.svg)](https://opensource.org/license/bsd-3-clause)
@@ -54,24 +54,51 @@ Or with short flags:
 deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts -n "MyAudioPlugin" -a "Your Name" -o ./my-audio-plugin --with-git
 ```
 
+### Generate a Desktop GUI App / CLI App Project
+
+Use `--type` to choose the project type (`plugin` is the default):
+
+```bash
+# Desktop GUI application
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --type gui -n "MyApp" -a "Your Name" -o ./my-app
+
+# Console (CLI) application
+deno run -A https://raw.githubusercontent.com/cocotone/deno-juce-project-generator/main/generator/generate.ts --type cli -n "MyCli" -a "Your Name" -o ./my-cli
+```
+
 ### Build and Run
 
 ```bash
 cd my-audio-plugin
 deno task build    # Build in Release mode
-deno task run      # Run the Standalone app
+deno task run      # Run the Standalone app (plugin) or the application (gui / cli)
 ```
+
+For CLI apps, arguments after `--` are passed to the executable:
+
+```bash
+deno task run -- --help
+```
+
+## Project Types
+
+| Type | CMake function | Source files | Output |
+|------|----------------|--------------|--------|
+| `plugin` (default) | `juce_add_plugin` | `PluginProcessor.*`, `PluginEditor.*` | VST3 / AU / Standalone |
+| `gui` | `juce_add_gui_app` | `Main.cpp`, `MainComponent.*` | Desktop application (`.app` on macOS) |
+| `cli` | `juce_add_console_app` | `Main.cpp` | Console executable |
 
 ## Command Options
 
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
-| `--name` | `-n` | `MyPlugin` | Plugin name |
+| `--type` | `-t` | `plugin` | Project type: `plugin`, `gui`, or `cli` |
+| `--name` | `-n` | `MyPlugin` / `MyApp` / `MyCli` | Project name |
 | `--author` | `-a` | `Your Name` | Author/Company name |
-| `--version` | `-v` | `0.0.1` | Plugin version |
-| `--output` | `-o` | (plugin name) | Output directory |
-| `--manufacturer-code` | | `Manu` | 4-char manufacturer code |
-| `--plugin-code` | | `Plug` | 4-char plugin code |
+| `--version` | `-v` | `0.0.1` | Project version |
+| `--output` | `-o` | (project name) | Output directory |
+| `--manufacturer-code` | | `Manu` | 4-char manufacturer code (plugin only) |
+| `--plugin-code` | | `Plug` | 4-char plugin code (plugin only) |
 | `--juce-tag` | | `master` | JUCE git tag/branch |
 | `--vs-version` | | (auto-detect) | Visual Studio version: 2019, 2022, or 2026 (Windows only) |
 | `--with-git` | | `false` | Initialize git repository |
@@ -97,6 +124,9 @@ deno task run      # Run the Standalone app
     └── PluginEditor.cpp
 ```
 
+For `--type gui`, `Source/` contains `Main.cpp`, `MainComponent.h`, and `MainComponent.cpp`.
+For `--type cli`, `Source/` contains `Main.cpp` only.
+
 ## Available Build Tasks
 
 | Task | Description |
@@ -105,12 +135,12 @@ deno task run      # Run the Standalone app
 | `deno task build:debug` | Build in Debug mode |
 | `deno task clean` | Clean build directory |
 | `deno task rebuild` | Clean and rebuild |
-| `deno task run` | Build and run Standalone |
-| `deno task run:debug` | Build and run Standalone (Debug) |
+| `deno task run` | Build and run Standalone (plugin) or the application (gui / cli) |
+| `deno task run:debug` | Same as `run`, in Debug mode |
 | `deno task format` | Format TypeScript files |
 | `deno task lint` | Lint TypeScript files |
 
-## Generated Plugin Formats
+## Generated Plugin Formats (`--type plugin`)
 
 - **VST3** - Windows, macOS, Linux
 - **AU (Audio Unit)** - macOS only

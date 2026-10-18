@@ -10,17 +10,21 @@ import {
   generateJuceBuildConfig,
   generateJuceCMakeFileAPI,
   generateJuceCMakeTypes,
-  generateVSDetector,
   generateJuceGitignore,
   generatePluginProcessorH,
   generatePluginProcessorCpp,
   generatePluginEditorH,
   generatePluginEditorCpp,
+  generateGuiAppMainCpp,
+  generateMainComponentH,
+  generateMainComponentCpp,
+  generateConsoleAppMainCpp,
 } from "../generator/juce-templates.ts";
-import type { JucePluginConfig } from "../generator/generate.ts";
+import type { JuceProjectConfig } from "../generator/generate.ts";
 
 // Sample config for testing
-const sampleConfig: JucePluginConfig = {
+const sampleConfig: JuceProjectConfig = {
+  projectType: "plugin",
   name: "TestPlugin",
   namePascal: "TestPlugin",
   nameSnake: "test_plugin",
@@ -79,14 +83,16 @@ Deno.test("generateJuceBuildConfig should include config values", () => {
   assertExists(content);
   assertStringIncludes(content, "export interface BuildConfig");
   assertStringIncludes(content, `projectName: "${sampleConfig.nameUpper}"`);
-  assertStringIncludes(content, `pluginName: "${sampleConfig.namePascal}"`);
+  assertStringIncludes(content, `projectType: "plugin"`);
+  assertStringIncludes(content, `targetName: "${sampleConfig.namePascal}"`);
+  assertStringIncludes(content, `productName: "${sampleConfig.name}"`);
   assertStringIncludes(content, `version: "${sampleConfig.version}"`);
   assertStringIncludes(content, `author: "${sampleConfig.author}"`);
   assertStringIncludes(content, `vsVersion: "${sampleConfig.vsVersion}"`);
 });
 
 Deno.test("generateJuceBuildConfig should handle missing vsVersion", () => {
-  const configWithoutVS: JucePluginConfig = {
+  const configWithoutVS: JuceProjectConfig = {
     ...sampleConfig,
     vsVersion: undefined,
   };
@@ -122,19 +128,6 @@ Deno.test("generateJuceCMakeFileAPI should include File API logic", () => {
   assertStringIncludes(content, '"v1"');
   assertStringIncludes(content, '"query"');
   assertStringIncludes(content, "codemodel-v2");
-});
-
-Deno.test("generateVSDetector should include VS detection logic", () => {
-  const content = generateVSDetector();
-
-  assertExists(content);
-  assertStringIncludes(content, "export interface VSVersion");
-  assertStringIncludes(content, "SUPPORTED_VS_VERSIONS");
-  assertStringIncludes(content, "Visual Studio 18 2026");
-  assertStringIncludes(content, "Visual Studio 17 2022");
-  assertStringIncludes(content, "Visual Studio 16 2019");
-  assertStringIncludes(content, "detectInstalledVSVersions");
-  assertStringIncludes(content, "getDefaultVSGenerator");
 });
 
 Deno.test("generateJuceCMakeTypes should include type definitions", () => {
@@ -217,10 +210,99 @@ Deno.test("All template generators should return non-empty strings", () => {
   assertEquals(generateJuceBuildConfig(sampleConfig).length > 0, true);
   assertEquals(generateJuceCMakeFileAPI().length > 0, true);
   assertEquals(generateJuceCMakeTypes().length > 0, true);
-  assertEquals(generateVSDetector().length > 0, true);
   assertEquals(generateJuceGitignore().length > 0, true);
   assertEquals(generatePluginProcessorH(sampleConfig).length > 0, true);
   assertEquals(generatePluginProcessorCpp(sampleConfig).length > 0, true);
   assertEquals(generatePluginEditorH(sampleConfig).length > 0, true);
   assertEquals(generatePluginEditorCpp(sampleConfig).length > 0, true);
+});
+
+// =============================================================================
+// GUI / Console application templates
+// =============================================================================
+
+const guiConfig: JuceProjectConfig = {
+  ...sampleConfig,
+  projectType: "gui",
+  name: "Test App",
+  namePascal: "TestApp",
+};
+
+const cliConfig: JuceProjectConfig = {
+  ...sampleConfig,
+  projectType: "cli",
+  name: "Test Cli",
+  namePascal: "TestCli",
+};
+
+Deno.test("generateJuceCMakeLists should use juce_add_gui_app for gui type", () => {
+  const content = generateJuceCMakeLists(guiConfig);
+
+  assertStringIncludes(content, "add_subdirectory(External/JUCE)");
+  assertStringIncludes(content, `juce_add_gui_app(${guiConfig.namePascal}`);
+  assertStringIncludes(content, `PRODUCT_NAME "${guiConfig.name}"`);
+  assertStringIncludes(content, "Source/Main.cpp");
+  assertStringIncludes(content, "Source/MainComponent.cpp");
+  assertStringIncludes(content, "juce::juce_gui_extra");
+  assertStringIncludes(content, "JUCE_APPLICATION_NAME_STRING");
+  assertEquals(content.includes("juce_add_plugin"), false);
+  assertEquals(content.includes("PLUGIN_CODE"), false);
+});
+
+Deno.test("generateJuceCMakeLists should use juce_add_console_app for cli type", () => {
+  const content = generateJuceCMakeLists(cliConfig);
+
+  assertStringIncludes(content, "add_subdirectory(External/JUCE)");
+  assertStringIncludes(content, `juce_add_console_app(${cliConfig.namePascal}`);
+  assertStringIncludes(content, `PRODUCT_NAME "${cliConfig.name}"`);
+  assertStringIncludes(content, "Source/Main.cpp");
+  assertStringIncludes(content, "juce::juce_core");
+  assertEquals(content.includes("juce_add_plugin"), false);
+  assertEquals(content.includes("juce_gui_extra"), false);
+  assertEquals(content.includes("MainComponent"), false);
+});
+
+Deno.test("generateJuceBuildConfig should include project type", () => {
+  assertStringIncludes(generateJuceBuildConfig(guiConfig), `projectType: "gui"`);
+  assertStringIncludes(generateJuceBuildConfig(cliConfig), `projectType: "cli"`);
+});
+
+Deno.test("generateJuceBuildScript should resolve executables for all project types", () => {
+  const content = generateJuceBuildScript();
+
+  assertStringIncludes(content, "function getExecutablePath()");
+  assertStringIncludes(content, 'case "plugin":');
+  assertStringIncludes(content, 'case "gui":');
+  assertStringIncludes(content, 'case "cli":');
+  assertStringIncludes(content, "config.productName");
+});
+
+Deno.test("generateGuiAppMainCpp should define a JUCEApplication", () => {
+  const content = generateGuiAppMainCpp(guiConfig);
+
+  assertStringIncludes(content, '#include "MainComponent.h"');
+  assertStringIncludes(content, `class ${guiConfig.namePascal}Application final : public juce::JUCEApplication`);
+  assertStringIncludes(content, "class MainWindow final : public juce::DocumentWindow");
+  assertStringIncludes(content, `START_JUCE_APPLICATION (${guiConfig.namePascal}Application)`);
+});
+
+Deno.test("generateMainComponent should define the main component", () => {
+  const header = generateMainComponentH();
+  assertStringIncludes(header, "#pragma once");
+  assertStringIncludes(header, "#include <juce_gui_extra/juce_gui_extra.h>");
+  assertStringIncludes(header, "class MainComponent final : public juce::Component");
+
+  const impl = generateMainComponentCpp(guiConfig);
+  assertStringIncludes(impl, '#include "MainComponent.h"');
+  assertStringIncludes(impl, "MainComponent::MainComponent()");
+  assertStringIncludes(impl, `"${guiConfig.name}"`);
+});
+
+Deno.test("generateConsoleAppMainCpp should define main()", () => {
+  const content = generateConsoleAppMainCpp();
+
+  assertStringIncludes(content, "#include <juce_core/juce_core.h>");
+  assertStringIncludes(content, "int main (int argc, char* argv[])");
+  assertStringIncludes(content, "juce::ArgumentList");
+  assertStringIncludes(content, "JUCE_APPLICATION_VERSION_STRING");
 });

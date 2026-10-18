@@ -41,7 +41,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">🎹</div>
                     <h3>JUCE Audio Plugin</h3>
-                    <p>Generate VST3, AU, and Standalone plugin projects with modern CMake setup.</p>
+                    <p>Generate VST3, AU, and Standalone plugin projects, desktop GUI apps, and CLI apps with modern CMake setup.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🚀</div>
@@ -125,6 +125,7 @@
             <pre><code class="language-bash">cd my-audio-plugin
 deno task build        # Build the plugin
 deno task run          # Run the Standalone app</code></pre>
+                <p>Use <code>--type gui</code> for a desktop GUI app or <code>--type cli</code> for a console app.</p>
         </section>
 
         <section id="options">
@@ -141,10 +142,16 @@ deno task run          # Run the Standalone app</code></pre>
                     </thead>
                     <tbody>
                         <tr>
+                            <td><code>--type</code></td>
+                            <td><code>-t</code></td>
+                            <td>plugin</td>
+                            <td>Project type: plugin, gui (desktop app), or cli (console app)</td>
+                        </tr>
+                        <tr>
                             <td><code>--name</code></td>
                             <td><code>-n</code></td>
-                            <td>MyPlugin</td>
-                            <td>Plugin name</td>
+                            <td>MyPlugin / MyApp / MyCli</td>
+                            <td>Project name</td>
                         </tr>
                         <tr>
                             <td><code>--author</code></td>
@@ -161,20 +168,20 @@ deno task run          # Run the Standalone app</code></pre>
                         <tr>
                             <td><code>--output</code></td>
                             <td><code>-o</code></td>
-                            <td>(plugin name)</td>
+                            <td>(project name)</td>
                             <td>Output directory</td>
                         </tr>
                         <tr>
                             <td><code>--manufacturer-code</code></td>
                             <td></td>
                             <td>Manu</td>
-                            <td>4-char manufacturer code</td>
+                            <td>4-char manufacturer code (plugin only)</td>
                         </tr>
                         <tr>
                             <td><code>--plugin-code</code></td>
                             <td></td>
                             <td>Plug</td>
-                            <td>4-char plugin code</td>
+                            <td>4-char plugin code (plugin only)</td>
                         </tr>
                         <tr>
                             <td><code>--juce-tag</code></td>
